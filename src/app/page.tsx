@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import jsPDF from "jspdf";
+import QRCodeLib from "qrcode";
 import html2canvas from "html2canvas";
 
 const fonts = [
@@ -20,16 +21,106 @@ export default function QRGeneratorPage() {
   const [font, setFont] = useState("sans-serif");
   const qrRef = useRef<HTMLDivElement>(null);
 
-  const qrValue = `https://kanriapps.com/t/${tableNumber}`;
 
-  const handleDownloadPDF = async () => {
-    if (!qrRef.current) return;
-    const canvas = await html2canvas(qrRef.current, { backgroundColor: null });
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: [300, 400] });
-    pdf.addImage(imgData, "PNG", 0, 0, 300, 400);
-    pdf.save(`kanriapps-table-${tableNumber}-qr.pdf`);
+  const generateQRCodeDataURL = async (url: string) => {
+    try {
+      const dataUrl = await QRCodeLib.toDataURL(url);
+      return dataUrl;
+    } catch (err) {
+      console.error("Error generating QR code", err);
+      return null;
+    }
   };
+
+  const handleTableAppQRs = async () => {
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "b5",
+    });
+
+    for (let index = 0; index < tableNumber; index++) {
+      if (index > 0) {
+        doc.addPage();
+      }
+      // Navy background
+      doc.setFillColor(20, 33, 61); // #14213d
+      doc.rect(0, 0, 176, 250, "F");
+
+      // White card with all corners rounded
+      doc.setFillColor(bgColor);
+      doc.roundedRect(10, 20, 156, 180, 20, 20, "F"); // all corners rounded
+
+      // Header: Restaurant Name
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(32);
+      doc.setTextColor(qrColor);
+      doc.text(restaurantName, 88, 40, { align: "center" });
+
+      // Subtitle: Food Menu
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(16);
+      doc.setTextColor(100, 116, 139); // Tailwind slate-500
+      doc.text("Food Menu", 88, 50, { align: "center" });
+
+      // QR Code
+      const qrCodeURL = `https://api.kanriapps.com/table-app/${restaurantName}?table=${
+        index + 1
+      }`;
+      const qrDataURL = await generateQRCodeDataURL(qrCodeURL);
+      if (!qrDataURL) return;
+      const imgProps = doc.getImageProperties(qrDataURL);
+      const qrWidth = 90; // mm
+      const qrHeight = (imgProps.height * qrWidth) / imgProps.width;
+      const qrX = 88 - qrWidth / 2;
+      const qrY = 60;
+      doc.addImage(qrDataURL, "PNG", qrX, qrY, qrWidth, qrHeight);
+
+      // Table Number
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.setTextColor(qrColor);
+      doc.text(`Table no #${index + 1}`, 88, qrY + qrHeight + 16, {
+        align: "center",
+      });
+
+      // Scan Text
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(18);
+      doc.setTextColor(qrColor);
+      doc.text(
+        "Scan above QR to see menu/order food",
+        88,
+        qrY + qrHeight + 28,
+        { align: "center" }
+      );
+
+      // Footer (navy bar)
+      // doc.setFillColor(20, 33, 61); // #14213d
+      // doc.rect(10, 250, 156, 30, "F"); // increase height for better spacing
+
+      // Footer text: Centered 'Kanriapps POS' (no heart)
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(24);
+      // Measure width of both texts to center them as a group
+      const kanriappsWidth = doc.getTextWidth("Kanriapps ");
+      const posWidth = doc.getTextWidth("POS");
+      const totalWidth = kanriappsWidth + posWidth;
+      const startX = 88 - totalWidth / 2;
+      doc.setTextColor(255, 255, 255);
+      doc.text("Kanriapps ", startX, 215, { align: "left" });
+      doc.setTextColor(252, 163, 17); // #fca311
+      doc.text("POS", startX + kanriappsWidth, 215, { align: "left" });
+
+      // Footer subtext
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      doc.setTextColor(220, 220, 220);
+      doc.text("made with love at Kanriapps.com", 88, 227, { align: "center" });
+    }
+    doc.save("table_qrs.pdf");
+  };
+
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-900 md:justify-center md:gap-8 max-w-5xl w-full mx-2 md:mx-8 my-4">
@@ -90,7 +181,7 @@ export default function QRGeneratorPage() {
               </select>
             </div>
             <button
-              onClick={handleDownloadPDF}
+              onClick={handleTableAppQRs}
               className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors shadow"
             >
               Download PDF
