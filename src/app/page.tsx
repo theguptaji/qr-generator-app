@@ -123,14 +123,14 @@ export default function QRGeneratorPage() {
 
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-900 md:justify-center md:gap-8 max-w-5xl w-full mx-2 md:mx-8 my-4">
+    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-900 md:justify-center md:gap-8 w-full px-1 sm:px-2 md:mx-8 my-2">
       {/* Left: Editing Controls */}
-      <aside className="w-full md:w-2/5 lg:w-1/3 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-8 flex flex-col gap-8 shadow-md">
+      <aside className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 sm:p-6 md:p-8 flex flex-col gap-4 sm:gap-6 md:gap-8 shadow-md rounded-lg">
         <div>
-          <h2 className="text-2xl font-bold mb-6 text-blue-600">Tabletop Editor</h2>
+          <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-blue-600 text-center">Tabletop Editor</h2>
           <div className="space-y-4">
             <div>
-              <label className="block mb-1 font-medium">Restaurant Name</label>
+              <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">Restaurant Name</label>
               <input
                 type="text"
                 value={restaurantName}
@@ -141,7 +141,7 @@ export default function QRGeneratorPage() {
               />
             </div>
             <div>
-              <label className="block mb-1 font-medium">Table Number</label>
+              <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">Table Number</label>
               <input
                 type="number"
                 min={1}
@@ -151,7 +151,7 @@ export default function QRGeneratorPage() {
               />
             </div>
             <div>
-              <label className="block mb-1 font-medium">QR Foreground Color</label>
+              <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">QR Foreground Color</label>
               <input
                 type="color"
                 value={qrColor}
@@ -160,7 +160,7 @@ export default function QRGeneratorPage() {
               />
             </div>
             <div>
-              <label className="block mb-1 font-medium">Background Color</label>
+              <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">Background Color</label>
               <input
                 type="color"
                 value={bgColor}
@@ -169,7 +169,7 @@ export default function QRGeneratorPage() {
               />
             </div>
             <div>
-              <label className="block mb-1 font-medium">Font</label>
+              <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">Font</label>
               <select
                 value={font}
                 onChange={e => setFont(e.target.value)}
@@ -190,18 +190,17 @@ export default function QRGeneratorPage() {
         </div>
       </aside>
       {/* Right: Live Preview */}
-      <section className="flex-1 flex items-center justify-center p-8 mx-2 md:mx-6">
-        <div className="w-full max-w-md">
+      <section className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-8 mx-0 sm:mx-2 md:mx-6 w-full">
+        <div className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto">
           <div
             ref={qrRef}
             className="relative flex flex-col items-center w-full rounded-2xl shadow-2xl overflow-hidden"
             style={{
               background: "#14213d",
-              minHeight: 420,
-              minWidth: 320,
+              width: "100%",
               maxWidth: 380,
               maxHeight: 540,
-              width: "100%",
+              minHeight: 320,
             }}
           >
             {/* White Card */}

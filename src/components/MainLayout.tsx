@@ -22,7 +22,7 @@ export default function AdminLayout({
         </header>
         {/* Main Content */}
         <main className="flex-1 p-8 overflow-y-auto">
-          <div className="container mx-auto px-2 md:px-4">
+          <div className="container mx-auto">
             {children}
           </div>
         </main>
