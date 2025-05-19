@@ -1,6 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select } from "@/components/ui/select";
 import { QRCodeCanvas } from "qrcode.react";
 import jsPDF from "jspdf";
 import QRCodeLib from "qrcode";
@@ -125,35 +130,38 @@ export default function QRGeneratorPage() {
   return (
     <div className="flex flex-col md:flex-row bg-gray-50 dark:bg-gray-900 md:justify-center md:gap-8 w-full px-1 sm:px-2 md:mx-8 my-2">
       {/* Left: Editing Controls */}
-      <aside className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 sm:p-6 md:p-8 flex flex-col gap-4 sm:gap-6 md:gap-8 shadow-md rounded-lg">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-blue-600 text-center">Tabletop Editor</h2>
-          <div className="space-y-4">
+      <Card className="w-full max-w-md mx-auto">
+  <CardHeader>
+    <CardTitle className="text-xl sm:text-2xl text-blue-600 text-center">Tabletop Editor</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <div className="space-y-4">
             <div>
-              <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">Restaurant Name</label>
-              <input
-                type="text"
-                value={restaurantName}
-                onChange={e => setRestaurantName(e.target.value)}
-                className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                placeholder="Enter restaurant name"
-                maxLength={32}
-              />
+              <Label htmlFor="restaurantName" className="mb-2">Restaurant Name</Label>
+      <Input
+        id="restaurantName"
+        type="text"
+        value={restaurantName}
+        onChange={e => setRestaurantName(e.target.value)}
+        placeholder="Enter restaurant name"
+        maxLength={32}
+      />
             </div>
             <div>
-              <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">Table Number</label>
-              <input
-                type="number"
-                min={1}
-                value={tableNumber}
-                onChange={e => setTableNumber(Number(e.target.value))}
-                className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
+              <Label htmlFor="tableNumber" className="mb-2">Table Number</Label>
+      <Input
+        id="tableNumber"
+        type="number"
+        min={1}
+        value={tableNumber}
+        onChange={e => setTableNumber(Number(e.target.value))}
+      />
             </div>
             <div className="flex gap-x-4">
   <div className="flex-1">
-    <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">QR Foreground Color</label>
-    <input
+    <Label htmlFor="qrColor" className="mb-2">QR Foreground Color</Label>
+    <Input
+      id="qrColor"
       type="color"
       value={qrColor}
       onChange={e => setQrColor(e.target.value)}
@@ -161,8 +169,9 @@ export default function QRGeneratorPage() {
     />
   </div>
   <div className="flex-1">
-    <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">Background Color</label>
-    <input
+    <Label htmlFor="bgColor" className="mb-2">Background Color</Label>
+    <Input
+      id="bgColor"
       type="color"
       value={bgColor}
       onChange={e => setBgColor(e.target.value)}
@@ -171,26 +180,24 @@ export default function QRGeneratorPage() {
   </div>
 </div>
             <div>
-              <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">Font</label>
-              <select
-                value={font}
-                onChange={e => setFont(e.target.value)}
-                className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              >
-                {fonts.map(f => (
-                  <option value={f.value} key={f.value}>{f.label}</option>
-                ))}
-              </select>
+              <Label htmlFor="font" className="mb-2">Font</Label>
+      <select
+        id="font"
+        value={font}
+        onChange={e => setFont(e.target.value)}
+        className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+      >
+        {fonts.map(f => (
+          <option value={f.value} key={f.value}>{f.label}</option>
+        ))}
+      </select>
             </div>
-            <button
-              onClick={handleTableAppQRs}
-              className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition-colors shadow"
-            >
-              Download PDF
-            </button>
-          </div>
-        </div>
-      </aside>
+            <Button className="mt-4 w-full" onClick={handleTableAppQRs}>
+        Download PDF
+      </Button>
+              </div>
+  </CardContent>
+</Card>
       {/* Right: Live Preview */}
       <section className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-8 mx-0 sm:mx-2 md:mx-6 w-full">
         <div className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto">
