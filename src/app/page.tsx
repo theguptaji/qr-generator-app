@@ -123,7 +123,7 @@ export default function QRGeneratorPage() {
 
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-900 md:justify-center md:gap-8 w-full px-1 sm:px-2 md:mx-8 my-2">
+    <div className="flex flex-col md:flex-row bg-gray-50 dark:bg-gray-900 md:justify-center md:gap-8 w-full px-1 sm:px-2 md:mx-8 my-2">
       {/* Left: Editing Controls */}
       <aside className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 sm:p-6 md:p-8 flex flex-col gap-4 sm:gap-6 md:gap-8 shadow-md rounded-lg">
         <div>
@@ -150,24 +150,26 @@ export default function QRGeneratorPage() {
                 className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
-            <div>
-              <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">QR Foreground Color</label>
-              <input
-                type="color"
-                value={qrColor}
-                onChange={e => setQrColor(e.target.value)}
-                className="w-10 h-10 p-0 border-none bg-transparent"
-              />
-            </div>
-            <div>
-              <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">Background Color</label>
-              <input
-                type="color"
-                value={bgColor}
-                onChange={e => setBgColor(e.target.value)}
-                className="w-10 h-10 p-0 border-none bg-transparent"
-              />
-            </div>
+            <div className="flex gap-x-4">
+  <div className="flex-1">
+    <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">QR Foreground Color</label>
+    <input
+      type="color"
+      value={qrColor}
+      onChange={e => setQrColor(e.target.value)}
+      className="w-10 h-10 p-0 border-none bg-transparent"
+    />
+  </div>
+  <div className="flex-1">
+    <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">Background Color</label>
+    <input
+      type="color"
+      value={bgColor}
+      onChange={e => setBgColor(e.target.value)}
+      className="w-10 h-10 p-0 border-none bg-transparent"
+    />
+  </div>
+</div>
             <div>
               <label className="block mb-1 font-medium text-gray-900 dark:text-gray-100">Font</label>
               <select
