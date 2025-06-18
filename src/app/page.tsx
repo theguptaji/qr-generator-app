@@ -214,7 +214,11 @@ export default function QRGeneratorPage() {
   };
 
   // Batch PDF generation logic
-  const handleBatchDownload = async (prefix: string, pageCount: number) => {
+  const handleBatchDownload = async (
+    prefix: string,
+    pageCount: number,
+    qrLinkTemplate: string
+  ) => {
     // A4 landscape: 297mm x 210mm. We'll use 10mm margin on all sides and 10mm between standees.
     const mmToPx = (mm: number) => Math.round((mm / 25.4) * 300); // 300dpi
     const margin = mmToPx(10); // 10mm margin
@@ -248,7 +252,12 @@ export default function QRGeneratorPage() {
         const qrCanvas = document.createElement("canvas");
         qrCanvas.width = Math.floor(standeeWidth * 0.53);
         qrCanvas.height = Math.floor(standeeWidth * 0.53);
-        const qrDataUrl = await QRCodeLib.toDataURL(qrLink, {
+        // Use the template if provided, else fallback to current qrLink
+        const qrValue =
+          qrLinkTemplate && qrLinkTemplate.includes("{n}")
+            ? qrLinkTemplate.replace("{n}", String(standeeNum))
+            : qrLink;
+        const qrDataUrl = await QRCodeLib.toDataURL(qrValue, {
           width: qrCanvas.width,
           margin: 1,
           color: { dark: qrColor, light: "#ffffff" },
