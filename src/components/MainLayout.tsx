@@ -59,7 +59,7 @@ export default function MainLayout({
         {/* Batch Download Modal (to be implemented) */}
         {isBatchModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-lg shadow-lg p-6 min-w-[320px]">
+            <div className="bg-white dark:bg-gray-900 dark:text-gray-100 rounded-lg shadow-lg p-6 min-w-[320px] border border-gray-200 dark:border-gray-700">
               <h2 className="text-xl font-bold mb-4">Batch Download</h2>
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-1">
@@ -67,7 +67,7 @@ export default function MainLayout({
                 </label>
                 <input
                   type="text"
-                  className="w-full border rounded px-3 py-2 mb-2"
+                  className="w-full border rounded px-3 py-2 mb-2 bg-white dark:bg-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500"
                   value={batchQrLink}
                   onChange={(e) => setBatchQrLink(e.target.value)}
                   placeholder="https://example.com/table/{n}"
@@ -80,7 +80,7 @@ export default function MainLayout({
                 </label>
                 <input
                   type="text"
-                  className="w-full border rounded px-3 py-2 mb-2"
+                  className="w-full border rounded px-3 py-2 mb-2 bg-white dark:bg-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500"
                   value={batchPrefix}
                   onChange={(e) => setBatchPrefix(e.target.value)}
                   placeholder="Table no"
@@ -91,7 +91,7 @@ export default function MainLayout({
                 <input
                   type="number"
                   min={1}
-                  className="w-full border rounded px-3 py-2"
+                  className="w-full border rounded px-3 py-2 bg-white dark:bg-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-700 placeholder-gray-400 dark:placeholder-gray-500"
                   value={batchPages}
                   onChange={(e) => setBatchPages(Number(e.target.value))}
                 />
