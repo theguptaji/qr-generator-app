@@ -158,7 +158,7 @@ export default function QRGeneratorPage() {
 
       ctx!.font = "16px " + font;
       ctx!.fillStyle = "#6b7280";
-      ctx!.fillText(subtitle, canvas.width / (2 * scale), 110);
+      ctx!.fillText(subtitle, canvas.width / (2 * scale), 115);
 
       if (additionalText) {
         ctx!.font = "bold 18px " + font;
@@ -375,7 +375,7 @@ export default function QRGeneratorPage() {
                   {title}
                 </span>
                 <span
-                  className="text-base font-semibold text-gray-500 tracking-wide"
+                  className="text-base font-semibold text-gray-500 tracking-wide mt-2"
                   style={{ fontFamily: font }}
                 >
                   {subtitle}
