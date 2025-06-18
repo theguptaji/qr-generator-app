@@ -96,22 +96,23 @@ export default function MainLayout({
                   onChange={(e) => setBatchPages(Number(e.target.value))}
                 />
               </div>
-              <button
-                className="mt-2 px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors w-full"
-                onClick={() => {
-                  if (onBatchDownload)
-                    onBatchDownload(batchPrefix, batchPages, batchQrLink);
-                  setBatchModalOpen(false);
-                }}
-              >
-                Download
-              </button>
-              <button
-                className="mt-4 px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold"
-                onClick={() => setBatchModalOpen(false)}
-              >
-                Close
-              </button>
+              <div className="flex justify-end gap-2 mt-6">
+                <Button
+                  variant="secondary"
+                  onClick={() => setBatchModalOpen(false)}
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (onBatchDownload)
+                      onBatchDownload(batchPrefix, batchPages, batchQrLink);
+                    setBatchModalOpen(false);
+                  }}
+                >
+                  Download
+                </Button>
+              </div>
             </div>
           </div>
         )}
