@@ -11,11 +11,42 @@ import QRCodeLib from "qrcode";
 import html2canvas from "html2canvas";
 import { FontSelector } from "@/components/FontSelector";
 
+// Color palettes for QR and background
+const qrColorPalette = [
+  { name: "Blue", value: "#2563eb" },
+  { name: "Green", value: "#16a34a" },
+  { name: "Purple", value: "#7c3aed" },
+  { name: "Red", value: "#dc2626" },
+  { name: "Orange", value: "#ea580c" },
+  { name: "Teal", value: "#0d9488" },
+  { name: "Pink", value: "#db2777" },
+  { name: "Indigo", value: "#4f46e5" },
+  { name: "Cyan", value: "#0891b2" },
+  { name: "Lime", value: "#65a30d" },
+  { name: "Amber", value: "#d97706" },
+  { name: "Rose", value: "#e11d48" },
+];
+
+const bgColorPalette = [
+  { name: "White", value: "#ffffff" },
+  { name: "Light Gray", value: "#f3f4f6" },
+  { name: "Warm Gray", value: "#fafaf9" },
+  { name: "Light Blue", value: "#eff6ff" },
+  { name: "Light Green", value: "#f0fdf4" },
+  { name: "Light Purple", value: "#faf5ff" },
+  { name: "Light Pink", value: "#fdf2f8" },
+  { name: "Light Yellow", value: "#fefce8" },
+  { name: "Light Orange", value: "#fff7ed" },
+  { name: "Light Teal", value: "#f0fdfa" },
+  { name: "Light Rose", value: "#fff1f2" },
+  { name: "Light Indigo", value: "#eef2ff" },
+];
+
 export default function QRGeneratorPage() {
   const [restaurantName, setRestaurantName] = useState("Kanriapps");
   const [tableNumber, setTableNumber] = useState(1);
   const [qrColor, setQrColor] = useState("#2563eb");
-  const [bgColor, setBgColor] = useState("#fff");
+  const [bgColor, setBgColor] = useState("#ffffff");
   const [font, setFont] = useState("Montserrat");
   const qrRef = useRef<HTMLDivElement>(null);
 
@@ -64,15 +95,15 @@ export default function QRGeneratorPage() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row bg-gray-50 dark:bg-gray-900 md:justify-center md:gap-8 w-full px-1 sm:px-2 md:mx-8 my-2">
-      {/* Left: Editing Controls */}
-      <Card className="w-full max-w-md mx-auto">
-        <CardHeader>
+    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)]">
+      {/* Left: Editing Controls (Sidebar in desktop) */}
+      <Card className="w-full lg:w-96 lg:min-h-[calc(100vh-4rem)] lg:rounded-none lg:border-r lg:border-b-0 border-b bg-white dark:bg-gray-900 lg:sticky lg:top-0 lg:flex lg:flex-col">
+        <CardHeader className="px-4 lg:px-6">
           <CardTitle className="text-xl sm:text-2xl text-blue-600 text-center">
             Tabletop Editor
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 lg:px-6 flex-1">
           <div className="space-y-4">
             <div>
               <Label htmlFor="restaurantName" className="mb-2">
@@ -99,32 +130,46 @@ export default function QRGeneratorPage() {
                 onChange={(e) => setTableNumber(Number(e.target.value))}
               />
             </div>
-            <div className="flex gap-x-4">
-              <div className="flex-1">
-                <Label htmlFor="qrColor" className="mb-2">
-                  QR Foreground Color
-                </Label>
-                <Input
-                  id="qrColor"
-                  type="color"
-                  value={qrColor}
-                  onChange={(e) => setQrColor(e.target.value)}
-                  className="w-10 h-10 p-0 border-none bg-transparent"
-                />
-              </div>
-              <div className="flex-1">
-                <Label htmlFor="bgColor" className="mb-2">
-                  Background Color
-                </Label>
-                <Input
-                  id="bgColor"
-                  type="color"
-                  value={bgColor}
-                  onChange={(e) => setBgColor(e.target.value)}
-                  className="w-10 h-10 p-0 border-none bg-transparent"
-                />
+            {/* QR Color Palette */}
+            <div className="space-y-1.5">
+              <Label className="mb-1.5">QR Color</Label>
+              <div className="grid grid-cols-6 gap-1">
+                {qrColorPalette.map((color) => (
+                  <button
+                    key={color.value}
+                    onClick={() => setQrColor(color.value)}
+                    className={`w-7 h-7 rounded-md border-2 transition-all ${
+                      qrColor === color.value
+                        ? "border-blue-500 scale-105"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                    style={{ backgroundColor: color.value }}
+                    title={color.name}
+                  />
+                ))}
               </div>
             </div>
+
+            {/* Background Color Palette */}
+            <div className="space-y-1.5">
+              <Label className="mb-1.5">Background Color</Label>
+              <div className="grid grid-cols-6 gap-1">
+                {bgColorPalette.map((color) => (
+                  <button
+                    key={color.value}
+                    onClick={() => setBgColor(color.value)}
+                    className={`w-7 h-7 rounded-md border-2 transition-all ${
+                      bgColor === color.value
+                        ? "border-blue-500 scale-105"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                    style={{ backgroundColor: color.value }}
+                    title={color.name}
+                  />
+                ))}
+              </div>
+            </div>
+
             <FontSelector selectedFont={font} onFontChange={setFont} />
             <Button className="mt-4 w-full" onClick={handleTableAppQRs}>
               Download PDF
@@ -133,8 +178,8 @@ export default function QRGeneratorPage() {
         </CardContent>
       </Card>
 
-      {/* Right: Live Preview */}
-      <section className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-8 mx-0 sm:mx-2 md:mx-6 w-full">
+      {/* Right: Live Preview (Main content area) */}
+      <section className="flex-1 flex items-center justify-center p-4 lg:p-8 bg-gray-50 dark:bg-gray-900">
         <div className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto">
           <div
             ref={qrRef}
