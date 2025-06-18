@@ -27,7 +27,7 @@ export default function MainLayout({
                   pathname === "/" && "text-blue-600 dark:text-blue-400"
                 )}
               >
-                Tabletop QR Generator
+                QR Standee Generator
               </Link>
               <Link
                 href="/templates"

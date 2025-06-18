@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { QRCodeCanvas } from "qrcode.react";
 import jsPDF from "jspdf";
 import QRCodeLib from "qrcode";
@@ -43,8 +43,11 @@ const bgColorPalette = [
 ];
 
 export default function QRGeneratorPage() {
-  const [restaurantName, setRestaurantName] = useState("Kanriapps");
-  const [tableNumber, setTableNumber] = useState(1);
+  const [title, setTitle] = useState("Sample Title");
+  const [subtitle, setSubtitle] = useState("Subtitle Text");
+  const [qrLink, setQrLink] = useState("https://example.com");
+  const [bottomText, setBottomText] = useState("Scan to learn more");
+  const [additionalText, setAdditionalText] = useState("");
   const [qrColor, setQrColor] = useState("#2563eb");
   const [bgColor, setBgColor] = useState("#ffffff");
   const [font, setFont] = useState("Montserrat");
@@ -88,48 +91,83 @@ export default function QRGeneratorPage() {
       const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-      pdf.save(`tabletop-${restaurantName}-${tableNumber}.pdf`);
+      pdf.save(`qr-standee-${title}.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
     }
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)]">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
       {/* Left: Editing Controls (Sidebar in desktop) */}
-      <Card className="w-full lg:w-96 lg:min-h-[calc(100vh-4rem)] lg:rounded-none lg:border-r lg:border-b-0 border-b bg-white dark:bg-gray-900 lg:sticky lg:top-0 lg:flex lg:flex-col">
-        <CardHeader className="px-4 lg:px-6">
-          <CardTitle className="text-xl sm:text-2xl text-blue-600 text-center">
-            Tabletop Editor
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 lg:px-6 flex-1">
+      <Card className="w-full lg:w-96 lg:h-[calc(100vh-4rem)] lg:rounded-none lg:border-r lg:border-b-0 border-b bg-white dark:bg-gray-900 lg:sticky lg:top-0 lg:flex lg:flex-col">
+        <CardContent className="px-4 lg:px-6 h-full overflow-y-auto">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="restaurantName" className="mb-2">
-                Restaurant Name
+              <Label htmlFor="title" className="mb-2">
+                Title
               </Label>
               <Input
-                id="restaurantName"
+                id="title"
                 type="text"
-                value={restaurantName}
-                onChange={(e) => setRestaurantName(e.target.value)}
-                placeholder="Enter restaurant name"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter title"
                 maxLength={32}
               />
             </div>
             <div>
-              <Label htmlFor="tableNumber" className="mb-2">
-                Table Number
+              <Label htmlFor="subtitle" className="mb-2">
+                Subtitle
               </Label>
               <Input
-                id="tableNumber"
-                type="number"
-                min={1}
-                value={tableNumber}
-                onChange={(e) => setTableNumber(Number(e.target.value))}
+                id="subtitle"
+                type="text"
+                value={subtitle}
+                onChange={(e) => setSubtitle(e.target.value)}
+                placeholder="Enter subtitle"
+                maxLength={32}
               />
             </div>
+            <div>
+              <Label htmlFor="qrLink" className="mb-2">
+                QR Code Link
+              </Label>
+              <Input
+                id="qrLink"
+                type="url"
+                value={qrLink}
+                onChange={(e) => setQrLink(e.target.value)}
+                placeholder="Enter URL for QR code"
+              />
+            </div>
+            <div>
+              <Label htmlFor="bottomText" className="mb-2">
+                Bottom Text
+              </Label>
+              <Input
+                id="bottomText"
+                type="text"
+                value={bottomText}
+                onChange={(e) => setBottomText(e.target.value)}
+                placeholder="Enter bottom text"
+                maxLength={32}
+              />
+            </div>
+            <div>
+              <Label htmlFor="additionalText" className="mb-2">
+                Additional Text (Optional)
+              </Label>
+              <Input
+                id="additionalText"
+                type="text"
+                value={additionalText}
+                onChange={(e) => setAdditionalText(e.target.value)}
+                placeholder="e.g., Table no #1"
+                maxLength={32}
+              />
+            </div>
+
             {/* QR Color Palette */}
             <div className="space-y-1.5">
               <Label className="mb-1.5">QR Color</Label>
@@ -206,38 +244,40 @@ export default function QRGeneratorPage() {
                   className="text-3xl font-extrabold"
                   style={{ color: qrColor, letterSpacing: 1, fontFamily: font }}
                 >
-                  {restaurantName}
+                  {title}
                 </span>
                 <span
                   className="text-base font-semibold text-gray-500 tracking-wide"
                   style={{ fontFamily: font }}
                 >
-                  Food Menu
+                  {subtitle}
                 </span>
               </div>
               {/* QR Code */}
               <div className="my-4 bg-white p-2 rounded-lg shadow-md">
                 <QRCodeCanvas
-                  value={`https://api.kanriapps.com/table-app/${restaurantName}?table=${tableNumber}`}
+                  value={qrLink}
                   size={180}
                   bgColor="#fff"
                   fgColor="#000"
                   level="H"
                 />
               </div>
-              {/* Table Number */}
-              <div
-                className="text-lg font-bold mb-2"
-                style={{ color: qrColor, fontFamily: font }}
-              >
-                Table no #{tableNumber}
-              </div>
-              {/* Scan Text */}
+              {/* Additional Text */}
+              {additionalText && (
+                <div
+                  className="text-lg font-bold mb-2"
+                  style={{ color: qrColor, fontFamily: font }}
+                >
+                  {additionalText}
+                </div>
+              )}
+              {/* Bottom Text */}
               <div
                 className="text-sm text-gray-500"
                 style={{ fontFamily: font }}
               >
-                Scan to view menu
+                {bottomText}
               </div>
             </div>
             {/* Footer */}
