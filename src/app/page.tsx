@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -52,19 +52,6 @@ export default function QRGeneratorPage() {
   const [bgColor, setBgColor] = useState("#ffffff");
   const [font, setFont] = useState("Montserrat");
   const qrRef = useRef<HTMLDivElement>(null);
-
-  // Load template settings if available
-  useEffect(() => {
-    const savedTemplate = localStorage.getItem("selectedTemplate");
-    if (savedTemplate) {
-      const template = JSON.parse(savedTemplate);
-      setFont(template.font);
-      setQrColor(template.qrColor);
-      setBgColor(template.bgColor);
-      // Clear the saved template
-      localStorage.removeItem("selectedTemplate");
-    }
-  }, []);
 
   const generateQRCodeDataURL = async (url: string) => {
     try {

@@ -29,16 +29,6 @@ export default function MainLayout({
               >
                 QR Standee Generator
               </Link>
-              <Link
-                href="/templates"
-                className={cn(
-                  "text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors",
-                  pathname === "/templates" &&
-                    "text-blue-600 dark:text-blue-400"
-                )}
-              >
-                Templates
-              </Link>
             </div>
             <ThemeToggle />
           </div>
