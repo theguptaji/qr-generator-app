@@ -1,6 +1,7 @@
 "use client";
 
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -34,20 +35,23 @@ export default function MainLayout({
               <Link
                 href="/"
                 className={cn(
-                  "text-lg font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors",
-                  pathname === "/" && "text-blue-600 dark:text-blue-400"
+                  "text-2xl font-semibold tracking-tight",
+                  "text-[#22223b] dark:text-white"
                 )}
+                style={{
+                  fontFamily: "Playfair Display, serif",
+                  letterSpacing: 0.5,
+                }}
               >
                 QR Standee Generator
               </Link>
             </div>
-            <ThemeToggle />
-            <button
-              className="ml-4 px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors"
-              onClick={() => setBatchModalOpen(true)}
-            >
-              Batch Download
-            </button>
+            <div className="flex items-center gap-2">
+              <Button className="ml-2" onClick={() => setBatchModalOpen(true)}>
+                Batch Download
+              </Button>
+              <ThemeToggle />
+            </div>
           </div>
         </header>
         {/* Main Content */}
