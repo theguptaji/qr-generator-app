@@ -4,13 +4,19 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useState, useRef } from "react";
 
 export default function MainLayout({
   children,
+  onBatchDownload,
 }: {
   children: React.ReactNode;
+  onBatchDownload?: (prefix: string, pageCount: number) => void;
 }) {
   const pathname = usePathname();
+  const [isBatchModalOpen, setBatchModalOpen] = useState(false);
+  const [batchPrefix, setBatchPrefix] = useState("Table no");
+  const [batchPages, setBatchPages] = useState(1);
 
   return (
     <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900">
@@ -31,10 +37,61 @@ export default function MainLayout({
               </Link>
             </div>
             <ThemeToggle />
+            <button
+              className="ml-4 px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors"
+              onClick={() => setBatchModalOpen(true)}
+            >
+              Batch Download
+            </button>
           </div>
         </header>
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto">{children}</main>
+        {/* Batch Download Modal (to be implemented) */}
+        {isBatchModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-lg shadow-lg p-6 min-w-[320px]">
+              <h2 className="text-xl font-bold mb-4">Batch Download</h2>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">
+                  Prefix (e.g., Table no)
+                </label>
+                <input
+                  type="text"
+                  className="w-full border rounded px-3 py-2 mb-2"
+                  value={batchPrefix}
+                  onChange={(e) => setBatchPrefix(e.target.value)}
+                  placeholder="Table no"
+                />
+                <label className="block text-sm font-medium mb-1 mt-2">
+                  Number of Pages
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  className="w-full border rounded px-3 py-2"
+                  value={batchPages}
+                  onChange={(e) => setBatchPages(Number(e.target.value))}
+                />
+              </div>
+              <button
+                className="mt-2 px-4 py-2 rounded bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors w-full"
+                onClick={() => {
+                  if (onBatchDownload) onBatchDownload(batchPrefix, batchPages);
+                  setBatchModalOpen(false);
+                }}
+              >
+                Download
+              </button>
+              <button
+                className="mt-4 px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold"
+                onClick={() => setBatchModalOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

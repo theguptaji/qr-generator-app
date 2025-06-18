@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ReactNode } from "react";
-import MainLayout from "@/components/MainLayout";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -37,9 +36,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className={inter.className}>
-        <ThemeProvider>
-          <MainLayout>{children}</MainLayout>
-        </ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
