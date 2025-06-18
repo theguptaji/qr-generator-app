@@ -80,17 +80,145 @@ export default function QRGeneratorPage() {
     if (!qrRef.current) return;
 
     try {
-      const canvas = await html2canvas(qrRef.current);
-      const imgData = canvas.toDataURL("image/png");
+      // Create a new QR code canvas with standard colors
+      const qrCanvas = document.createElement("canvas");
+      const qrContext = qrCanvas.getContext("2d");
+      // Increase QR code resolution
+      qrCanvas.width = 360;
+      qrCanvas.height = 360;
+
+      // Generate QR code data URL with higher resolution
+      const qrDataUrl = await QRCodeLib.toDataURL(qrLink, {
+        width: 360,
+        margin: 1,
+        color: {
+          dark: qrColor,
+          light: "#ffffff",
+        },
+      });
+
+      // Load QR code image
+      const qrImage = new Image();
+      qrImage.src = qrDataUrl;
+
+      // Wait for QR image to load
+      await new Promise((resolve) => {
+        qrImage.onload = resolve;
+      });
+
+      // Draw QR code on canvas
+      qrContext?.drawImage(qrImage, 0, 0);
+
+      // Create a new canvas for the entire standee with higher resolution
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      // Double the resolution for better quality
+      const scale = 2;
+      canvas.width = 380 * scale;
+      canvas.height = 540 * scale;
+
+      // Enable image smoothing for better quality
+      ctx!.imageSmoothingEnabled = true;
+      ctx!.imageSmoothingQuality = "high";
+
+      // Scale the context to match the higher resolution
+      ctx!.scale(scale, scale);
+
+      // Draw background
+      ctx!.fillStyle = "#14213d";
+      ctx!.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
+
+      // Draw white card background
+      ctx!.fillStyle = bgColor;
+      ctx!.fillRect(0, 0, canvas.width / scale, canvas.height / scale - 40);
+
+      // Draw QR code with higher resolution
+      // Draw white background with shadow for QR code
+      ctx!.shadowColor = "rgba(0, 0, 0, 0.15)";
+      ctx!.shadowBlur = 6;
+      ctx!.shadowOffsetX = 0;
+      ctx!.shadowOffsetY = 2;
+      ctx!.fillStyle = "#ffffff";
+      ctx!.beginPath();
+      ctx!.roundRect((canvas.width / scale - 220) / 2, 150, 220, 220, 16);
+      ctx!.fill();
+
+      // Reset shadow for QR code
+      ctx!.shadowColor = "transparent";
+      ctx!.shadowBlur = 0;
+      ctx!.shadowOffsetX = 0;
+      ctx!.shadowOffsetY = 0;
+      ctx!.drawImage(qrCanvas, (canvas.width / scale - 200) / 2, 160, 200, 200);
+
+      // Draw text with improved quality
+      ctx!.font = "bold 32px " + font;
+      ctx!.fillStyle = qrColor;
+      ctx!.textAlign = "center";
+      ctx!.fillText(title, canvas.width / (2 * scale), 80);
+
+      ctx!.font = "16px " + font;
+      ctx!.fillStyle = "#6b7280";
+      ctx!.fillText(subtitle, canvas.width / (2 * scale), 110);
+
+      if (additionalText) {
+        ctx!.font = "bold 18px " + font;
+        ctx!.fillStyle = qrColor;
+        ctx!.fillText(additionalText, canvas.width / (2 * scale), 400);
+      }
+
+      ctx!.font = "14px " + font;
+      ctx!.fillStyle = "#6b7280";
+      ctx!.fillText(bottomText, canvas.width / (2 * scale), 440);
+
+      // Draw footer
+      ctx!.fillStyle = "#14213d";
+      ctx!.fillRect(0, canvas.height / scale - 40, canvas.width / scale, 40);
+
+      // Footer text parts
+      ctx!.font = "bold 20px Helvetica";
+      ctx!.textAlign = "left";
+      const kanriapps = "Kanriapps";
+      const heart = " ❤️ "; // add spaces for separation
+      const pos = "POS";
+      const gap = 8; // extra gap in px
+      const kanriappsWidth = ctx!.measureText(kanriapps).width;
+      const heartWidth = ctx!.measureText(heart).width;
+      const posWidth = ctx!.measureText(pos).width;
+      const totalWidth = kanriappsWidth + heartWidth + posWidth;
+      const startX = (canvas.width / scale - totalWidth) / 2;
+      const y = canvas.height / scale - 16;
+
+      // Draw 'Kanriapps'
+      ctx!.fillStyle = "#ffffff";
+      ctx!.fillText(kanriapps, startX, y);
+      // Draw heart
+      ctx!.fillStyle = "#f97316";
+      ctx!.fillText(heart, startX + kanriappsWidth, y);
+      // Draw 'POS'
+      ctx!.fillStyle = "#fca311";
+      ctx!.fillText(pos, startX + kanriappsWidth + heartWidth, y);
+
+      // Convert to PDF with higher quality
+      const imgData = canvas.toDataURL("image/png", 1.0);
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
+        compress: true,
       });
 
       const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      pdf.addImage(
+        imgData,
+        "PNG",
+        0,
+        0,
+        imgWidth,
+        imgHeight,
+        undefined,
+        "FAST"
+      );
       pdf.save(`qr-standee-${title}.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -254,13 +382,14 @@ export default function QRGeneratorPage() {
                 </span>
               </div>
               {/* QR Code */}
-              <div className="my-4 bg-white p-2 rounded-lg shadow-md">
+              <div className="my-4 bg-white p-3 rounded-lg shadow-md">
                 <QRCodeCanvas
                   value={qrLink}
-                  size={180}
-                  bgColor="#fff"
-                  fgColor="#000"
+                  size={200}
+                  bgColor="#ffffff"
+                  fgColor={qrColor}
                   level="H"
+                  includeMargin={false}
                 />
               </div>
               {/* Additional Text */}
@@ -282,7 +411,10 @@ export default function QRGeneratorPage() {
             </div>
             {/* Footer */}
             <div className="w-full bg-[#14213d] py-2 flex flex-col items-center">
-              <span className="text-white font-bold text-lg tracking-wide flex items-center gap-1">
+              <span
+                className="text-white font-bold text-lg tracking-wide flex items-center gap-1"
+                style={{ fontFamily: "Helvetica" }}
+              >
                 Kanriapps <span className="text-orange-400">❤️</span>{" "}
                 <span className="text-[#fca311] font-extrabold">POS</span>
               </span>
