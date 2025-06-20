@@ -53,6 +53,7 @@ export default function QRGeneratorPage() {
   const [bgColor, setBgColor] = useState("#ffffff");
   const [font, setFont] = useState("Montserrat");
   const qrRef = useRef<HTMLDivElement>(null);
+  const [isBatchLoading, setIsBatchLoading] = useState(false);
 
   const generateQRCodeDataURL = async (url: string) => {
     try {
@@ -219,6 +220,7 @@ export default function QRGeneratorPage() {
     pageCount: number,
     qrLinkTemplate: string
   ) => {
+    setIsBatchLoading(true);
     // A4 landscape: 297mm x 210mm. We'll use 10mm margin on all sides and 10mm between standees.
     const mmToPx = (mm: number) => Math.round((mm / 25.4) * 300); // 300dpi
     const margin = mmToPx(10); // 10mm margin
@@ -390,214 +392,227 @@ export default function QRGeneratorPage() {
       }
     }
     jsPDFLandscape.save(`qr-standee-batch.pdf`);
+    setIsBatchLoading(false);
   };
 
   return (
-    <MainLayout onBatchDownload={handleBatchDownload}>
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
-        {/* Left: Editing Controls (Sidebar in desktop) */}
-        <Card className="w-full lg:w-96 lg:h-[calc(100vh-4rem)] lg:rounded-none lg:border-r lg:border-b-0 border-b bg-white dark:bg-gray-900 lg:sticky lg:top-0 lg:flex lg:flex-col">
-          <CardContent className="px-4 lg:px-6 h-full overflow-y-auto">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="title" className="mb-2">
-                  Title
-                </Label>
-                <Input
-                  id="title"
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Enter title"
-                  maxLength={32}
-                />
-              </div>
-              <div>
-                <Label htmlFor="subtitle" className="mb-2">
-                  Subtitle
-                </Label>
-                <Input
-                  id="subtitle"
-                  type="text"
-                  value={subtitle}
-                  onChange={(e) => setSubtitle(e.target.value)}
-                  placeholder="Enter subtitle"
-                  maxLength={32}
-                />
-              </div>
-              <div>
-                <Label htmlFor="qrLink" className="mb-2">
-                  QR Code Link
-                </Label>
-                <Input
-                  id="qrLink"
-                  type="url"
-                  value={qrLink}
-                  onChange={(e) => setQrLink(e.target.value)}
-                  placeholder="Enter URL for QR code"
-                />
-              </div>
-              <div>
-                <Label htmlFor="bottomText" className="mb-2">
-                  Bottom Text
-                </Label>
-                <Input
-                  id="bottomText"
-                  type="text"
-                  value={bottomText}
-                  onChange={(e) => setBottomText(e.target.value)}
-                  placeholder="Enter bottom text"
-                  maxLength={32}
-                />
-              </div>
-              <div>
-                <Label htmlFor="additionalText" className="mb-2">
-                  Additional Text (Optional)
-                </Label>
-                <Input
-                  id="additionalText"
-                  type="text"
-                  value={additionalText}
-                  onChange={(e) => setAdditionalText(e.target.value)}
-                  placeholder="e.g., Table no #1"
-                  maxLength={32}
-                />
-              </div>
-
-              {/* QR Color Palette */}
-              <div className="space-y-1.5">
-                <Label className="mb-1.5">QR Color</Label>
-                <div className="grid grid-cols-6 gap-1">
-                  {qrColorPalette.map((color) => (
-                    <button
-                      key={color.value}
-                      onClick={() => setQrColor(color.value)}
-                      className={`w-7 h-7 rounded-md border-2 transition-all ${
-                        qrColor === color.value
-                          ? "border-blue-500 scale-105"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                      style={{ backgroundColor: color.value }}
-                      title={color.name}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Background Color Palette */}
-              <div className="space-y-1.5">
-                <Label className="mb-1.5">Background Color</Label>
-                <div className="grid grid-cols-6 gap-1">
-                  {bgColorPalette.map((color) => (
-                    <button
-                      key={color.value}
-                      onClick={() => setBgColor(color.value)}
-                      className={`w-7 h-7 rounded-md border-2 transition-all ${
-                        bgColor === color.value
-                          ? "border-blue-500 scale-105"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                      style={{ backgroundColor: color.value }}
-                      title={color.name}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <FontSelector selectedFont={font} onFontChange={setFont} />
-              <Button className="mt-4 w-full" onClick={handleTableAppQRs}>
-                Download PDF
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Right: Live Preview (Main content area) */}
-        <section className="flex-1 flex items-center justify-center p-4 lg:p-8 bg-gray-50 dark:bg-gray-900">
-          <div className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto">
-            <div
-              ref={qrRef}
-              className="relative flex flex-col items-center w-full rounded-2xl shadow-2xl overflow-hidden"
-              style={{
-                background: "#14213d",
-                width: "100%",
-                maxWidth: 380,
-                maxHeight: 540,
-                minHeight: 320,
-              }}
-            >
-              {/* White Card */}
-              <div
-                className="w-full flex-1 rounded-b-2xl flex flex-col items-center pt-6 pb-4 px-4"
-                style={{
-                  background: bgColor,
-                  minHeight: 400,
-                }}
-              >
-                {/* Header */}
-                <div className="flex flex-col items-center mb-2">
-                  <span
-                    className="text-3xl font-extrabold"
-                    style={{
-                      color: qrColor,
-                      letterSpacing: 1,
-                      fontFamily: font,
-                    }}
-                  >
-                    {title}
-                  </span>
-                  <span
-                    className="text-base font-semibold text-gray-500 tracking-wide mt-2"
-                    style={{ fontFamily: font }}
-                  >
-                    {subtitle}
-                  </span>
-                </div>
-                {/* QR Code */}
-                <div className="my-4 bg-white p-3 rounded-lg shadow-md">
-                  <QRCodeCanvas
-                    value={qrLink}
-                    size={200}
-                    bgColor="#ffffff"
-                    fgColor={qrColor}
-                    level="H"
-                    includeMargin={false}
+    <>
+      {isBatchLoading && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black bg-opacity-50">
+          <div className="flex flex-col items-center gap-4 p-8 bg-white dark:bg-gray-900 rounded-xl shadow-lg">
+            <div className="animate-spin rounded-full border-4 border-blue-500 border-t-transparent h-12 w-12 mb-2" />
+            <span className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+              Downloading...
+            </span>
+          </div>
+        </div>
+      )}
+      <MainLayout onBatchDownload={handleBatchDownload}>
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
+          {/* Left: Editing Controls (Sidebar in desktop) */}
+          <Card className="w-full lg:w-96 lg:h-[calc(100vh-4rem)] lg:rounded-none lg:border-r lg:border-b-0 border-b bg-white dark:bg-gray-900 lg:sticky lg:top-0 lg:flex lg:flex-col">
+            <CardContent className="px-4 lg:px-6 h-full overflow-y-auto">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="title" className="mb-2">
+                    Title
+                  </Label>
+                  <Input
+                    id="title"
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Enter title"
+                    maxLength={32}
                   />
                 </div>
-                {/* Additional Text */}
-                {additionalText && (
-                  <div
-                    className="text-lg font-bold mb-2"
-                    style={{ color: qrColor, fontFamily: font }}
-                  >
-                    {additionalText}
+                <div>
+                  <Label htmlFor="subtitle" className="mb-2">
+                    Subtitle
+                  </Label>
+                  <Input
+                    id="subtitle"
+                    type="text"
+                    value={subtitle}
+                    onChange={(e) => setSubtitle(e.target.value)}
+                    placeholder="Enter subtitle"
+                    maxLength={32}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="qrLink" className="mb-2">
+                    QR Code Link
+                  </Label>
+                  <Input
+                    id="qrLink"
+                    type="url"
+                    value={qrLink}
+                    onChange={(e) => setQrLink(e.target.value)}
+                    placeholder="Enter URL for QR code"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="bottomText" className="mb-2">
+                    Bottom Text
+                  </Label>
+                  <Input
+                    id="bottomText"
+                    type="text"
+                    value={bottomText}
+                    onChange={(e) => setBottomText(e.target.value)}
+                    placeholder="Enter bottom text"
+                    maxLength={32}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="additionalText" className="mb-2">
+                    Additional Text (Optional)
+                  </Label>
+                  <Input
+                    id="additionalText"
+                    type="text"
+                    value={additionalText}
+                    onChange={(e) => setAdditionalText(e.target.value)}
+                    placeholder="e.g., Table no #1"
+                    maxLength={32}
+                  />
+                </div>
+
+                {/* QR Color Palette */}
+                <div className="space-y-1.5">
+                  <Label className="mb-1.5">QR Color</Label>
+                  <div className="grid grid-cols-6 gap-1">
+                    {qrColorPalette.map((color) => (
+                      <button
+                        key={color.value}
+                        onClick={() => setQrColor(color.value)}
+                        className={`w-7 h-7 rounded-md border-2 transition-all ${
+                          qrColor === color.value
+                            ? "border-blue-500 scale-105"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                        style={{ backgroundColor: color.value }}
+                        title={color.name}
+                      />
+                    ))}
                   </div>
-                )}
-                {/* Bottom Text */}
+                </div>
+
+                {/* Background Color Palette */}
+                <div className="space-y-1.5">
+                  <Label className="mb-1.5">Background Color</Label>
+                  <div className="grid grid-cols-6 gap-1">
+                    {bgColorPalette.map((color) => (
+                      <button
+                        key={color.value}
+                        onClick={() => setBgColor(color.value)}
+                        className={`w-7 h-7 rounded-md border-2 transition-all ${
+                          bgColor === color.value
+                            ? "border-blue-500 scale-105"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                        style={{ backgroundColor: color.value }}
+                        title={color.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <FontSelector selectedFont={font} onFontChange={setFont} />
+                <Button className="mt-4 w-full" onClick={handleTableAppQRs}>
+                  Download PDF
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Right: Live Preview (Main content area) */}
+          <section className="flex-1 flex items-center justify-center p-4 lg:p-8 bg-gray-50 dark:bg-gray-900">
+            <div className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto">
+              <div
+                ref={qrRef}
+                className="relative flex flex-col items-center w-full rounded-2xl shadow-2xl overflow-hidden"
+                style={{
+                  background: "#14213d",
+                  width: "100%",
+                  maxWidth: 380,
+                  maxHeight: 540,
+                  minHeight: 320,
+                }}
+              >
+                {/* White Card */}
                 <div
-                  className="text-sm text-gray-500"
-                  style={{ fontFamily: font }}
+                  className="w-full flex-1 rounded-b-2xl flex flex-col items-center pt-6 pb-4 px-4"
+                  style={{
+                    background: bgColor,
+                    minHeight: 400,
+                  }}
                 >
-                  {bottomText}
+                  {/* Header */}
+                  <div className="flex flex-col items-center mb-2">
+                    <span
+                      className="text-3xl font-extrabold"
+                      style={{
+                        color: qrColor,
+                        letterSpacing: 1,
+                        fontFamily: font,
+                      }}
+                    >
+                      {title}
+                    </span>
+                    <span
+                      className="text-base font-semibold text-gray-500 tracking-wide mt-2"
+                      style={{ fontFamily: font }}
+                    >
+                      {subtitle}
+                    </span>
+                  </div>
+                  {/* QR Code */}
+                  <div className="my-4 bg-white p-3 rounded-lg shadow-md">
+                    <QRCodeCanvas
+                      value={qrLink}
+                      size={200}
+                      bgColor="#ffffff"
+                      fgColor={qrColor}
+                      level="H"
+                      includeMargin={false}
+                    />
+                  </div>
+                  {/* Additional Text */}
+                  {additionalText && (
+                    <div
+                      className="text-lg font-bold mb-2"
+                      style={{ color: qrColor, fontFamily: font }}
+                    >
+                      {additionalText}
+                    </div>
+                  )}
+                  {/* Bottom Text */}
+                  <div
+                    className="text-sm text-gray-500"
+                    style={{ fontFamily: font }}
+                  >
+                    {bottomText}
+                  </div>
+                </div>
+                {/* Footer */}
+                <div className="w-full bg-[#14213d] py-2 flex flex-col items-center">
+                  <span
+                    className="text-white font-bold text-lg tracking-wide flex items-center gap-1"
+                    style={{ fontFamily: "Helvetica" }}
+                  >
+                    Kanriapps <span className="text-orange-400">❤️</span>{" "}
+                    <span className="text-[#fca311] font-extrabold">POS</span>
+                  </span>
+                  <span className="text-xs text-gray-300 mt-1">
+                    made with love at Kanriapps.com
+                  </span>
                 </div>
               </div>
-              {/* Footer */}
-              <div className="w-full bg-[#14213d] py-2 flex flex-col items-center">
-                <span
-                  className="text-white font-bold text-lg tracking-wide flex items-center gap-1"
-                  style={{ fontFamily: "Helvetica" }}
-                >
-                  Kanriapps <span className="text-orange-400">❤️</span>{" "}
-                  <span className="text-[#fca311] font-extrabold">POS</span>
-                </span>
-                <span className="text-xs text-gray-300 mt-1">
-                  made with love at Kanriapps.com
-                </span>
-              </div>
             </div>
-          </div>
-        </section>
-      </div>
-    </MainLayout>
+          </section>
+        </div>
+      </MainLayout>
+    </>
   );
 }
