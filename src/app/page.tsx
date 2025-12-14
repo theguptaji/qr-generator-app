@@ -87,6 +87,8 @@ export default function QRGeneratorPage() {
     bottomText: { x: 50, y: 85 },
   });
   const [dragging, setDragging] = useState<string | null>(null);
+  const [qrDragging, setQrDragging] = useState(false);
+  const [qrResizing, setQrResizing] = useState(false);
   const [templateImage, setTemplateImage] = useState<HTMLImageElement | null>(
     null
   );
@@ -95,6 +97,11 @@ export default function QRGeneratorPage() {
     y: number;
     size: number;
   } | null>(null);
+  const [manualQrPosition, setManualQrPosition] = useState<{
+    x: number;
+    y: number;
+    size: number;
+  } | null>({ x: 50, y: 50, size: 30 });
   const qrRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const [isBatchLoading, setIsBatchLoading] = useState(false);
@@ -176,18 +183,37 @@ export default function QRGeneratorPage() {
 
       if (maxWhiteArea > 0) {
         // Convert to percentage for responsive positioning
-        setQrPosition({
+        const detectedPosition = {
           x: (bestX / img.width) * 100,
           y: (bestY / img.height) * 100,
           size: (bestSize / Math.max(img.width, img.height)) * 100,
-        });
+        };
+        setQrPosition(detectedPosition);
+        // Only set manual position if it hasn't been set yet
+        if (!manualQrPosition) {
+          setManualQrPosition(detectedPosition);
+        }
       } else {
         // Default position if no white square found (center, 30% size)
-        setQrPosition({ x: 50, y: 50, size: 30 });
+        const defaultPosition = { x: 50, y: 50, size: 30 };
+        setQrPosition(defaultPosition);
+        if (!manualQrPosition) {
+          setManualQrPosition(defaultPosition);
+        }
       }
     };
     img.src = template.path;
   }, [selectedTemplate]);
+
+  // Initialize manual position when template changes
+  useEffect(() => {
+    if (selectedTemplate === "none") {
+      setManualQrPosition({ x: 50, y: 50, size: 30 });
+    } else if (qrPosition && !manualQrPosition) {
+      // Initialize with detected position when template is first selected
+      setManualQrPosition(qrPosition);
+    }
+  }, [selectedTemplate, qrPosition]);
 
   const generateQRCodeDataURL = async (url: string) => {
     try {
@@ -202,7 +228,22 @@ export default function QRGeneratorPage() {
   // Drag handlers for text elements
   const handleMouseDown = (element: string, e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragging(element);
+  };
+
+  // Drag handler for QR code
+  const handleQrMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setQrDragging(true);
+  };
+
+  // Resize handler for QR code
+  const handleQrResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setQrResizing(true);
   };
 
   useEffect(() => {
@@ -236,6 +277,95 @@ export default function QRGeneratorPage() {
     };
   }, [dragging]);
 
+  // QR code drag handler
+  useEffect(() => {
+    if (!qrDragging || !previewRef.current || !manualQrPosition) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!previewRef.current || !manualQrPosition) return;
+      const rect = previewRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+      setManualQrPosition((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          x: Math.max(prev.size / 2, Math.min(100 - prev.size / 2, x)),
+          y: Math.max(prev.size / 2, Math.min(100 - prev.size / 2, y)),
+        };
+      });
+    };
+
+    const handleMouseUp = () => {
+      setQrDragging(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [qrDragging, manualQrPosition]);
+
+  // QR code resize handler
+  useEffect(() => {
+    if (!qrResizing || !previewRef.current || !manualQrPosition) return;
+
+    const initialSize = manualQrPosition.size;
+    const initialX = manualQrPosition.x;
+    const initialY = manualQrPosition.y;
+    let startDistance = 0;
+    let isInitialized = false;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!previewRef.current || !manualQrPosition) return;
+      const rect = previewRef.current.getBoundingClientRect();
+      const mouseX = ((e.clientX - rect.left) / rect.width) * 100;
+      const mouseY = ((e.clientY - rect.top) / rect.height) * 100;
+
+      // Calculate distance from QR center to mouse
+      const deltaX = mouseX - initialX;
+      const deltaY = mouseY - initialY;
+      const currentDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+      if (!isInitialized) {
+        startDistance = currentDistance;
+        isInitialized = true;
+        return;
+      }
+
+      // Calculate size change based on distance change
+      const distanceChange = currentDistance - startDistance;
+      const newSize = Math.max(
+        10,
+        Math.min(50, initialSize + distanceChange * 0.6)
+      );
+
+      setManualQrPosition((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          size: newSize,
+        };
+      });
+    };
+
+    const handleMouseUp = () => {
+      setQrResizing(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [qrResizing, manualQrPosition]);
+
   const handleTableAppQRs = async () => {
     if (!qrRef.current) return;
 
@@ -260,10 +390,11 @@ export default function QRGeneratorPage() {
         ctx!.fillRect(0, 0, canvasWidth, canvasHeight);
       }
 
-      // Generate and draw QR code
-      const qrSize = qrPosition
-        ? (qrPosition.size / 100) * Math.min(canvasWidth, canvasHeight)
-        : 200;
+      // Generate and draw QR code - use manual position if available
+      const finalQrPosition = manualQrPosition ||
+        qrPosition || { x: 50, y: 50, size: 30 };
+      const qrSize =
+        (finalQrPosition.size / 100) * Math.min(canvasWidth, canvasHeight);
       const qrDataUrl = await QRCodeLib.toDataURL(qrLink, {
         width: qrSize * scale,
         margin: 1,
@@ -279,12 +410,8 @@ export default function QRGeneratorPage() {
         qrImage.onload = resolve;
       });
 
-      const qrX = qrPosition
-        ? (qrPosition.x / 100) * canvasWidth
-        : canvasWidth / 2;
-      const qrY = qrPosition
-        ? (qrPosition.y / 100) * canvasHeight
-        : canvasHeight / 2;
+      const qrX = (finalQrPosition.x / 100) * canvasWidth;
+      const qrY = (finalQrPosition.y / 100) * canvasHeight;
 
       // Draw white background for QR code
       const qrPadding = qrSize * 0.1;
@@ -696,7 +823,8 @@ export default function QRGeneratorPage() {
                 )}
                 {selectedTemplate !== "none" && (
                   <div className="text-sm text-gray-500 dark:text-gray-400 p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
-                    💡 Drag text elements in the preview to reposition them
+                    💡 Drag text elements and QR code in the preview to
+                    reposition them. Hover over QR code to resize.
                   </div>
                 )}
 
@@ -742,21 +870,35 @@ export default function QRGeneratorPage() {
                   />
                 )}
 
-                {/* QR Code - positioned in white square or center */}
+                {/* QR Code - draggable and resizable */}
                 <div
-                  className="absolute"
+                  className={`absolute ${
+                    qrDragging || qrResizing ? "z-50" : "z-20"
+                  } ${qrDragging ? "cursor-move" : "cursor-default"}`}
                   style={{
-                    left: qrPosition ? `${qrPosition.x}%` : "50%",
-                    top: qrPosition ? `${qrPosition.y}%` : "50%",
+                    left: manualQrPosition
+                      ? `${manualQrPosition.x}%`
+                      : qrPosition
+                      ? `${qrPosition.x}%`
+                      : "50%",
+                    top: manualQrPosition
+                      ? `${manualQrPosition.y}%`
+                      : qrPosition
+                      ? `${qrPosition.y}%`
+                      : "50%",
                     transform: "translate(-50%, -50%)",
-                    width: qrPosition
+                    width: manualQrPosition
+                      ? `${Math.min(manualQrPosition.size, 50)}%`
+                      : qrPosition
                       ? `${Math.min(qrPosition.size, 35)}%`
                       : "200px",
                     maxWidth: "200px",
                     aspectRatio: "1/1",
                   }}
+                  onMouseDown={handleQrMouseDown}
+                  title="Drag to move QR code"
                 >
-                  <div className="w-full h-full bg-white p-2 rounded-lg shadow-md flex items-center justify-center">
+                  <div className="w-full h-full bg-white p-2 rounded-lg shadow-md flex items-center justify-center relative group hover:shadow-lg transition-shadow">
                     <QRCodeCanvas
                       value={qrLink}
                       size={200}
@@ -769,7 +911,19 @@ export default function QRGeneratorPage() {
                         height: "100%",
                         maxWidth: "100%",
                         maxHeight: "100%",
+                        pointerEvents: "none",
                       }}
+                    />
+                    {/* Resize handle */}
+                    <div
+                      className={`absolute bottom-0 right-0 w-5 h-5 bg-blue-500 rounded-tl-lg cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity border-2 border-white shadow-md ${
+                        qrResizing ? "opacity-100" : ""
+                      }`}
+                      onMouseDown={handleQrResizeMouseDown}
+                      style={{
+                        transform: "translate(50%, 50%)",
+                      }}
+                      title="Drag to resize QR code"
                     />
                   </div>
                 </div>
@@ -885,10 +1039,22 @@ export default function QRGeneratorPage() {
                   <div
                     className="absolute"
                     style={{
-                      left: qrPosition ? `${qrPosition.x}%` : "50%",
-                      top: qrPosition ? `${qrPosition.y}%` : "50%",
+                      left: manualQrPosition
+                        ? `${manualQrPosition.x}%`
+                        : qrPosition
+                        ? `${qrPosition.x}%`
+                        : "50%",
+                      top: manualQrPosition
+                        ? `${manualQrPosition.y}%`
+                        : qrPosition
+                        ? `${qrPosition.y}%`
+                        : "50%",
                       transform: "translate(-50%, -50%)",
-                      width: qrPosition ? `${qrPosition.size}%` : "200px",
+                      width: manualQrPosition
+                        ? `${manualQrPosition.size}%`
+                        : qrPosition
+                        ? `${qrPosition.size}%`
+                        : "200px",
                       aspectRatio: "1/1",
                     }}
                   >
