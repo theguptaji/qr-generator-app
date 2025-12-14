@@ -475,11 +475,10 @@ export default function QRGeneratorPage() {
       );
 
       // Draw text elements at their positions
+      // Note: Font sizes are not multiplied by scale because ctx.scale() already handles scaling
       const titleX = (textPositions.title.x / 100) * canvasWidth;
       const titleY = (textPositions.title.y / 100) * canvasHeight;
-      ctx!.font = `bold ${textStyles.title.size * scale}px ${
-        textStyles.title.font
-      }`;
+      ctx!.font = `bold ${textStyles.title.size}px ${textStyles.title.font}`;
       ctx!.fillStyle = textStyles.title.color;
       ctx!.textAlign = "center";
       ctx!.textBaseline = "middle";
@@ -487,27 +486,21 @@ export default function QRGeneratorPage() {
 
       const subtitleX = (textPositions.subtitle.x / 100) * canvasWidth;
       const subtitleY = (textPositions.subtitle.y / 100) * canvasHeight;
-      ctx!.font = `${textStyles.subtitle.size * scale}px ${
-        textStyles.subtitle.font
-      }`;
+      ctx!.font = `${textStyles.subtitle.size}px ${textStyles.subtitle.font}`;
       ctx!.fillStyle = textStyles.subtitle.color;
       ctx!.fillText(subtitle, subtitleX, subtitleY);
 
       if (additionalText) {
         const addTextX = (textPositions.additionalText.x / 100) * canvasWidth;
         const addTextY = (textPositions.additionalText.y / 100) * canvasHeight;
-        ctx!.font = `bold ${textStyles.additionalText.size * scale}px ${
-          textStyles.additionalText.font
-        }`;
+        ctx!.font = `bold ${textStyles.additionalText.size}px ${textStyles.additionalText.font}`;
         ctx!.fillStyle = textStyles.additionalText.color;
         ctx!.fillText(additionalText, addTextX, addTextY);
       }
 
       const bottomTextX = (textPositions.bottomText.x / 100) * canvasWidth;
       const bottomTextY = (textPositions.bottomText.y / 100) * canvasHeight;
-      ctx!.font = `${textStyles.bottomText.size * scale}px ${
-        textStyles.bottomText.font
-      }`;
+      ctx!.font = `${textStyles.bottomText.size}px ${textStyles.bottomText.font}`;
       ctx!.fillStyle = textStyles.bottomText.color;
       ctx!.fillText(bottomText, bottomTextX, bottomTextY);
 
