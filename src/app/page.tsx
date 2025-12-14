@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,13 @@ import QRCodeLib from "qrcode";
 import html2canvas from "html2canvas";
 import { FontSelector } from "@/components/FontSelector";
 import MainLayout from "@/components/MainLayout";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Color palettes for QR and background
 const qrColorPalette = [
@@ -43,6 +50,21 @@ const bgColorPalette = [
   { name: "Light Indigo", value: "#eef2ff" },
 ];
 
+const templates = [
+  { id: "none", name: "None", path: null },
+  { id: "tp-1", name: "Template 1", path: "/tp-1.png" },
+  { id: "tp-2", name: "Template 2", path: "/tp-2.png" },
+  { id: "tp-3", name: "Template 3", path: "/tp-3.png" },
+  { id: "tp-4", name: "Template 4", path: "/tp-4.png" },
+  { id: "tp-5", name: "Template 5", path: "/tp-5.png" },
+  { id: "tp-6", name: "Template 6", path: "/tp-6.png" },
+];
+
+interface TextPosition {
+  x: number;
+  y: number;
+}
+
 export default function QRGeneratorPage() {
   const [title, setTitle] = useState("Sample Title");
   const [subtitle, setSubtitle] = useState("Subtitle Text");
@@ -52,8 +74,120 @@ export default function QRGeneratorPage() {
   const [qrColor, setQrColor] = useState("#2563eb");
   const [bgColor, setBgColor] = useState("#ffffff");
   const [font, setFont] = useState("Montserrat");
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("none");
+  const [textPositions, setTextPositions] = useState<{
+    title: TextPosition;
+    subtitle: TextPosition;
+    additionalText: TextPosition;
+    bottomText: TextPosition;
+  }>({
+    title: { x: 50, y: 15 },
+    subtitle: { x: 50, y: 25 },
+    additionalText: { x: 50, y: 75 },
+    bottomText: { x: 50, y: 85 },
+  });
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [templateImage, setTemplateImage] = useState<HTMLImageElement | null>(
+    null
+  );
+  const [qrPosition, setQrPosition] = useState<{
+    x: number;
+    y: number;
+    size: number;
+  } | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const [isBatchLoading, setIsBatchLoading] = useState(false);
+
+  // Load template image and detect white square for QR code placement
+  useEffect(() => {
+    if (selectedTemplate === "none") {
+      setTemplateImage(null);
+      setQrPosition(null);
+      return;
+    }
+
+    const template = templates.find((t) => t.id === selectedTemplate);
+    if (!template?.path) return;
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      setTemplateImage(img);
+
+      // Detect white square area in the template
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      // Find white square - try multiple sizes
+      let maxWhiteArea = 0;
+      let bestX = 0;
+      let bestY = 0;
+      let bestSize = 0;
+
+      // Try different square sizes (from 15% to 40% of image dimension)
+      const minSize = Math.min(img.width, img.height) * 0.15;
+      const maxSize = Math.min(img.width, img.height) * 0.4;
+      const stepSize = Math.min(img.width, img.height) * 0.05;
+
+      for (let scanSize = minSize; scanSize <= maxSize; scanSize += stepSize) {
+        const step = Math.max(1, Math.floor(scanSize / 10));
+        for (let y = 0; y < img.height - scanSize; y += step) {
+          for (let x = 0; x < img.width - scanSize; x += step) {
+            let whitePixels = 0;
+            let totalPixels = 0;
+
+            // Sample pixels in the square area
+            const sampleStep = Math.max(1, Math.floor(scanSize / 20));
+            for (let sy = 0; sy < scanSize; sy += sampleStep) {
+              for (let sx = 0; sx < scanSize; sx += sampleStep) {
+                const idx = ((y + sy) * img.width + (x + sx)) * 4;
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
+                // Check if pixel is white (or very light)
+                if (r > 240 && g > 240 && b > 240) {
+                  whitePixels++;
+                }
+                totalPixels++;
+              }
+            }
+
+            const whiteRatio = whitePixels / totalPixels;
+            const area = scanSize * scanSize;
+
+            // Prefer larger squares with high white ratio
+            if (whiteRatio > 0.75 && area > maxWhiteArea) {
+              maxWhiteArea = area;
+              bestX = x + scanSize / 2; // Center of square
+              bestY = y + scanSize / 2;
+              bestSize = scanSize;
+            }
+          }
+        }
+      }
+
+      if (maxWhiteArea > 0) {
+        // Convert to percentage for responsive positioning
+        setQrPosition({
+          x: (bestX / img.width) * 100,
+          y: (bestY / img.height) * 100,
+          size: (bestSize / Math.max(img.width, img.height)) * 100,
+        });
+      } else {
+        // Default position if no white square found (center, 30% size)
+        setQrPosition({ x: 50, y: 50, size: 30 });
+      }
+    };
+    img.src = template.path;
+  }, [selectedTemplate]);
 
   const generateQRCodeDataURL = async (url: string) => {
     try {
@@ -65,20 +199,73 @@ export default function QRGeneratorPage() {
     }
   };
 
+  // Drag handlers for text elements
+  const handleMouseDown = (element: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    setDragging(element);
+  };
+
+  useEffect(() => {
+    if (!dragging || !previewRef.current) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!previewRef.current) return;
+      const rect = previewRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+      setTextPositions((prev) => ({
+        ...prev,
+        [dragging]: {
+          x: Math.max(0, Math.min(100, x)),
+          y: Math.max(0, Math.min(100, y)),
+        },
+      }));
+    };
+
+    const handleMouseUp = () => {
+      setDragging(null);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [dragging]);
+
   const handleTableAppQRs = async () => {
     if (!qrRef.current) return;
 
     try {
-      // Create a new QR code canvas with standard colors
-      const qrCanvas = document.createElement("canvas");
-      const qrContext = qrCanvas.getContext("2d");
-      // Increase QR code resolution
-      qrCanvas.width = 360;
-      qrCanvas.height = 360;
+      const scale = 2;
+      const canvasWidth = 380;
+      const canvasHeight = 540;
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = canvasWidth * scale;
+      canvas.height = canvasHeight * scale;
 
-      // Generate QR code data URL with higher resolution
+      ctx!.imageSmoothingEnabled = true;
+      ctx!.imageSmoothingQuality = "high";
+      ctx!.scale(scale, scale);
+
+      // Draw background - template or solid color
+      if (selectedTemplate !== "none" && templateImage) {
+        ctx!.drawImage(templateImage, 0, 0, canvasWidth, canvasHeight);
+      } else {
+        ctx!.fillStyle = bgColor;
+        ctx!.fillRect(0, 0, canvasWidth, canvasHeight);
+      }
+
+      // Generate and draw QR code
+      const qrSize = qrPosition
+        ? (qrPosition.size / 100) * Math.min(canvasWidth, canvasHeight)
+        : 200;
       const qrDataUrl = await QRCodeLib.toDataURL(qrLink, {
-        width: 360,
+        width: qrSize * scale,
         margin: 1,
         color: {
           dark: qrColor,
@@ -86,108 +273,76 @@ export default function QRGeneratorPage() {
         },
       });
 
-      // Load QR code image
       const qrImage = new Image();
       qrImage.src = qrDataUrl;
-
-      // Wait for QR image to load
       await new Promise((resolve) => {
         qrImage.onload = resolve;
       });
 
-      // Draw QR code on canvas
-      qrContext?.drawImage(qrImage, 0, 0);
+      const qrX = qrPosition
+        ? (qrPosition.x / 100) * canvasWidth
+        : canvasWidth / 2;
+      const qrY = qrPosition
+        ? (qrPosition.y / 100) * canvasHeight
+        : canvasHeight / 2;
 
-      // Create a new canvas for the entire standee with higher resolution
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      // Double the resolution for better quality
-      const scale = 2;
-      canvas.width = 380 * scale;
-      canvas.height = 540 * scale;
-
-      // Enable image smoothing for better quality
-      ctx!.imageSmoothingEnabled = true;
-      ctx!.imageSmoothingQuality = "high";
-
-      // Scale the context to match the higher resolution
-      ctx!.scale(scale, scale);
-
-      // Draw background
-      ctx!.fillStyle = "#14213d";
-      ctx!.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
-
-      // Draw white card background
-      ctx!.fillStyle = bgColor;
-      ctx!.fillRect(0, 0, canvas.width / scale, canvas.height / scale - 40);
-
-      // Draw QR code with higher resolution
-      // Draw white background with shadow for QR code
+      // Draw white background for QR code
+      const qrPadding = qrSize * 0.1;
       ctx!.shadowColor = "rgba(0, 0, 0, 0.15)";
       ctx!.shadowBlur = 6;
       ctx!.shadowOffsetX = 0;
       ctx!.shadowOffsetY = 2;
       ctx!.fillStyle = "#ffffff";
       ctx!.beginPath();
-      ctx!.roundRect((canvas.width / scale - 220) / 2, 150, 220, 220, 16);
+      ctx!.roundRect(
+        qrX - qrSize / 2 - qrPadding,
+        qrY - qrSize / 2 - qrPadding,
+        qrSize + qrPadding * 2,
+        qrSize + qrPadding * 2,
+        16
+      );
       ctx!.fill();
 
-      // Reset shadow for QR code
       ctx!.shadowColor = "transparent";
       ctx!.shadowBlur = 0;
-      ctx!.shadowOffsetX = 0;
-      ctx!.shadowOffsetY = 0;
-      ctx!.drawImage(qrCanvas, (canvas.width / scale - 200) / 2, 160, 200, 200);
+      ctx!.drawImage(
+        qrImage,
+        qrX - qrSize / 2,
+        qrY - qrSize / 2,
+        qrSize,
+        qrSize
+      );
 
-      // Draw text with improved quality
-      ctx!.font = "bold 32px " + font;
+      // Draw text elements at their positions
+      const titleX = (textPositions.title.x / 100) * canvasWidth;
+      const titleY = (textPositions.title.y / 100) * canvasHeight;
+      ctx!.font = `bold ${32 * scale}px ${font}`;
       ctx!.fillStyle = qrColor;
       ctx!.textAlign = "center";
-      ctx!.fillText(title, canvas.width / (2 * scale), 80);
+      ctx!.textBaseline = "middle";
+      ctx!.fillText(title, titleX, titleY);
 
-      ctx!.font = "16px " + font;
+      const subtitleX = (textPositions.subtitle.x / 100) * canvasWidth;
+      const subtitleY = (textPositions.subtitle.y / 100) * canvasHeight;
+      ctx!.font = `${16 * scale}px ${font}`;
       ctx!.fillStyle = "#6b7280";
-      ctx!.fillText(subtitle, canvas.width / (2 * scale), 115);
+      ctx!.fillText(subtitle, subtitleX, subtitleY);
 
       if (additionalText) {
-        ctx!.font = "bold 18px " + font;
+        const addTextX = (textPositions.additionalText.x / 100) * canvasWidth;
+        const addTextY = (textPositions.additionalText.y / 100) * canvasHeight;
+        ctx!.font = `bold ${18 * scale}px ${font}`;
         ctx!.fillStyle = qrColor;
-        ctx!.fillText(additionalText, canvas.width / (2 * scale), 400);
+        ctx!.fillText(additionalText, addTextX, addTextY);
       }
 
-      ctx!.font = "14px " + font;
+      const bottomTextX = (textPositions.bottomText.x / 100) * canvasWidth;
+      const bottomTextY = (textPositions.bottomText.y / 100) * canvasHeight;
+      ctx!.font = `${14 * scale}px ${font}`;
       ctx!.fillStyle = "#6b7280";
-      ctx!.fillText(bottomText, canvas.width / (2 * scale), 440);
+      ctx!.fillText(bottomText, bottomTextX, bottomTextY);
 
-      // Draw footer
-      ctx!.fillStyle = "#14213d";
-      ctx!.fillRect(0, canvas.height / scale - 40, canvas.width / scale, 40);
-
-      // Footer text parts
-      ctx!.font = "bold 20px Helvetica";
-      ctx!.textAlign = "left";
-      const kanriapps = "Kanriapps";
-      const heart = " ❤️ "; // add spaces for separation
-      const pos = "POS";
-      const gap = 8; // extra gap in px
-      const kanriappsWidth = ctx!.measureText(kanriapps).width;
-      const heartWidth = ctx!.measureText(heart).width;
-      const posWidth = ctx!.measureText(pos).width;
-      const totalWidth = kanriappsWidth + heartWidth + posWidth;
-      const startX = (canvas.width / scale - totalWidth) / 2;
-      const y = canvas.height / scale - 16;
-
-      // Draw 'Kanriapps'
-      ctx!.fillStyle = "#ffffff";
-      ctx!.fillText(kanriapps, startX, y);
-      // Draw heart
-      ctx!.fillStyle = "#f97316";
-      ctx!.fillText(heart, startX + kanriappsWidth, y);
-      // Draw 'POS'
-      ctx!.fillStyle = "#fca311";
-      ctx!.fillText(pos, startX + kanriappsWidth + heartWidth, y);
-
-      // Convert to PDF with higher quality
+      // Convert to PDF
       const imgData = canvas.toDataURL("image/png", 1.0);
       const pdf = new jsPDF({
         orientation: "portrait",
@@ -414,6 +569,26 @@ export default function QRGeneratorPage() {
             <CardContent className="px-4 lg:px-6 h-full overflow-y-auto">
               <div className="space-y-4">
                 <div>
+                  <Label htmlFor="template" className="mb-2">
+                    Template
+                  </Label>
+                  <Select
+                    value={selectedTemplate}
+                    onValueChange={setSelectedTemplate}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select template" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <Label htmlFor="title" className="mb-2">
                     Title
                   </Label>
@@ -498,25 +673,32 @@ export default function QRGeneratorPage() {
                   </div>
                 </div>
 
-                {/* Background Color Palette */}
-                <div className="space-y-1.5">
-                  <Label className="mb-1.5">Background Color</Label>
-                  <div className="grid grid-cols-6 gap-1">
-                    {bgColorPalette.map((color) => (
-                      <button
-                        key={color.value}
-                        onClick={() => setBgColor(color.value)}
-                        className={`w-7 h-7 rounded-md border-2 transition-all ${
-                          bgColor === color.value
-                            ? "border-blue-500 scale-105"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                        style={{ backgroundColor: color.value }}
-                        title={color.name}
-                      />
-                    ))}
+                {/* Background Color Palette - only show if no template */}
+                {selectedTemplate === "none" && (
+                  <div className="space-y-1.5">
+                    <Label className="mb-1.5">Background Color</Label>
+                    <div className="grid grid-cols-6 gap-1">
+                      {bgColorPalette.map((color) => (
+                        <button
+                          key={color.value}
+                          onClick={() => setBgColor(color.value)}
+                          className={`w-7 h-7 rounded-md border-2 transition-all ${
+                            bgColor === color.value
+                              ? "border-blue-500 scale-105"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                          style={{ backgroundColor: color.value }}
+                          title={color.name}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
+                {selectedTemplate !== "none" && (
+                  <div className="text-sm text-gray-500 dark:text-gray-400 p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
+                    💡 Drag text elements in the preview to reposition them
+                  </div>
+                )}
 
                 <FontSelector selectedFont={font} onFontChange={setFont} />
                 <Button className="mt-4 w-full" onClick={handleTableAppQRs}>
@@ -530,45 +712,51 @@ export default function QRGeneratorPage() {
           <section className="flex-1 flex items-center justify-center p-4 lg:p-8 bg-gray-50 dark:bg-gray-900">
             <div className="w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto">
               <div
-                ref={qrRef}
-                className="relative flex flex-col items-center w-full rounded-2xl shadow-2xl overflow-hidden"
+                ref={previewRef}
+                className="relative w-full rounded-2xl shadow-2xl overflow-hidden"
                 style={{
-                  background: "#14213d",
                   width: "100%",
                   maxWidth: 380,
                   maxHeight: 540,
                   minHeight: 320,
+                  aspectRatio: "380/540",
                 }}
               >
-                {/* White Card */}
+                {/* Template Background or Default Background */}
+                {selectedTemplate !== "none" && templateImage ? (
+                  <img
+                    src={templateImage.src}
+                    alt="Template"
+                    className="w-full h-full object-cover"
+                    style={{ position: "absolute", top: 0, left: 0 }}
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full"
+                    style={{
+                      background: bgColor,
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                    }}
+                  />
+                )}
+
+                {/* QR Code - positioned in white square or center */}
                 <div
-                  className="w-full flex-1 rounded-b-2xl flex flex-col items-center pt-6 pb-4 px-4"
+                  className="absolute"
                   style={{
-                    background: bgColor,
-                    minHeight: 400,
+                    left: qrPosition ? `${qrPosition.x}%` : "50%",
+                    top: qrPosition ? `${qrPosition.y}%` : "50%",
+                    transform: "translate(-50%, -50%)",
+                    width: qrPosition
+                      ? `${Math.min(qrPosition.size, 35)}%`
+                      : "200px",
+                    maxWidth: "200px",
+                    aspectRatio: "1/1",
                   }}
                 >
-                  {/* Header */}
-                  <div className="flex flex-col items-center mb-2">
-                    <span
-                      className="text-3xl font-extrabold"
-                      style={{
-                        color: qrColor,
-                        letterSpacing: 1,
-                        fontFamily: font,
-                      }}
-                    >
-                      {title}
-                    </span>
-                    <span
-                      className="text-base font-semibold text-gray-500 tracking-wide mt-2"
-                      style={{ fontFamily: font }}
-                    >
-                      {subtitle}
-                    </span>
-                  </div>
-                  {/* QR Code */}
-                  <div className="my-4 bg-white p-3 rounded-lg shadow-md">
+                  <div className="w-full h-full bg-white p-2 rounded-lg shadow-md flex items-center justify-center">
                     <QRCodeCanvas
                       value={qrLink}
                       size={200}
@@ -576,37 +764,203 @@ export default function QRGeneratorPage() {
                       fgColor={qrColor}
                       level="H"
                       includeMargin={false}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        maxWidth: "100%",
+                        maxHeight: "100%",
+                      }}
                     />
                   </div>
-                  {/* Additional Text */}
+                </div>
+
+                {/* Draggable Text Elements */}
+                <div
+                  className={`absolute select-none transition-opacity ${
+                    dragging === "title"
+                      ? "opacity-70 z-50"
+                      : "cursor-move z-10 hover:opacity-90"
+                  }`}
+                  style={{
+                    left: `${textPositions.title.x}%`,
+                    top: `${textPositions.title.y}%`,
+                    transform: "translate(-50%, -50%)",
+                    fontFamily: font,
+                    color: qrColor,
+                    fontSize: "clamp(1.5rem, 4vw, 2rem)",
+                    fontWeight: "bold",
+                    pointerEvents: dragging === "title" ? "none" : "auto",
+                    textShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                  }}
+                  onMouseDown={(e) => handleMouseDown("title", e)}
+                >
+                  {title}
+                </div>
+
+                <div
+                  className={`absolute select-none transition-opacity ${
+                    dragging === "subtitle"
+                      ? "opacity-70 z-50"
+                      : "cursor-move z-10 hover:opacity-90"
+                  }`}
+                  style={{
+                    left: `${textPositions.subtitle.x}%`,
+                    top: `${textPositions.subtitle.y}%`,
+                    transform: "translate(-50%, -50%)",
+                    fontFamily: font,
+                    color: "#6b7280",
+                    fontSize: "clamp(0.875rem, 2vw, 1rem)",
+                    fontWeight: "semibold",
+                    pointerEvents: dragging === "subtitle" ? "none" : "auto",
+                    textShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                  }}
+                  onMouseDown={(e) => handleMouseDown("subtitle", e)}
+                >
+                  {subtitle}
+                </div>
+
+                {additionalText && (
+                  <div
+                    className={`absolute select-none transition-opacity ${
+                      dragging === "additionalText"
+                        ? "opacity-70 z-50"
+                        : "cursor-move z-10 hover:opacity-90"
+                    }`}
+                    style={{
+                      left: `${textPositions.additionalText.x}%`,
+                      top: `${textPositions.additionalText.y}%`,
+                      transform: "translate(-50%, -50%)",
+                      fontFamily: font,
+                      color: qrColor,
+                      fontSize: "clamp(1rem, 2.5vw, 1.25rem)",
+                      fontWeight: "bold",
+                      pointerEvents:
+                        dragging === "additionalText" ? "none" : "auto",
+                      textShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                    }}
+                    onMouseDown={(e) => handleMouseDown("additionalText", e)}
+                  >
+                    {additionalText}
+                  </div>
+                )}
+
+                <div
+                  className={`absolute select-none transition-opacity ${
+                    dragging === "bottomText"
+                      ? "opacity-70 z-50"
+                      : "cursor-move z-10 hover:opacity-90"
+                  }`}
+                  style={{
+                    left: `${textPositions.bottomText.x}%`,
+                    top: `${textPositions.bottomText.y}%`,
+                    transform: "translate(-50%, -50%)",
+                    fontFamily: font,
+                    color: "#6b7280",
+                    fontSize: "clamp(0.75rem, 2vw, 0.875rem)",
+                    pointerEvents: dragging === "bottomText" ? "none" : "auto",
+                    textShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                  }}
+                  onMouseDown={(e) => handleMouseDown("bottomText", e)}
+                >
+                  {bottomText}
+                </div>
+
+                {/* Export container for PDF generation */}
+                <div
+                  ref={qrRef}
+                  className="absolute inset-0 pointer-events-none opacity-0"
+                >
+                  {selectedTemplate !== "none" && templateImage ? (
+                    <img
+                      src={templateImage.src}
+                      alt="Template"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full"
+                      style={{ background: bgColor }}
+                    />
+                  )}
+                  <div
+                    className="absolute"
+                    style={{
+                      left: qrPosition ? `${qrPosition.x}%` : "50%",
+                      top: qrPosition ? `${qrPosition.y}%` : "50%",
+                      transform: "translate(-50%, -50%)",
+                      width: qrPosition ? `${qrPosition.size}%` : "200px",
+                      aspectRatio: "1/1",
+                    }}
+                  >
+                    <div className="w-full h-full bg-white p-2 rounded-lg">
+                      <QRCodeCanvas
+                        value={qrLink}
+                        size={200}
+                        bgColor="#ffffff"
+                        fgColor={qrColor}
+                        level="H"
+                        includeMargin={false}
+                        className="w-full h-full"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    className="absolute"
+                    style={{
+                      left: `${textPositions.title.x}%`,
+                      top: `${textPositions.title.y}%`,
+                      transform: "translate(-50%, -50%)",
+                      fontFamily: font,
+                      color: qrColor,
+                      fontSize: "2rem",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {title}
+                  </div>
+                  <div
+                    className="absolute"
+                    style={{
+                      left: `${textPositions.subtitle.x}%`,
+                      top: `${textPositions.subtitle.y}%`,
+                      transform: "translate(-50%, -50%)",
+                      fontFamily: font,
+                      color: "#6b7280",
+                      fontSize: "1rem",
+                      fontWeight: "semibold",
+                    }}
+                  >
+                    {subtitle}
+                  </div>
                   {additionalText && (
                     <div
-                      className="text-lg font-bold mb-2"
-                      style={{ color: qrColor, fontFamily: font }}
+                      className="absolute"
+                      style={{
+                        left: `${textPositions.additionalText.x}%`,
+                        top: `${textPositions.additionalText.y}%`,
+                        transform: "translate(-50%, -50%)",
+                        fontFamily: font,
+                        color: qrColor,
+                        fontSize: "1.25rem",
+                        fontWeight: "bold",
+                      }}
                     >
                       {additionalText}
                     </div>
                   )}
-                  {/* Bottom Text */}
                   <div
-                    className="text-sm text-gray-500"
-                    style={{ fontFamily: font }}
+                    className="absolute"
+                    style={{
+                      left: `${textPositions.bottomText.x}%`,
+                      top: `${textPositions.bottomText.y}%`,
+                      transform: "translate(-50%, -50%)",
+                      fontFamily: font,
+                      color: "#6b7280",
+                      fontSize: "0.875rem",
+                    }}
                   >
                     {bottomText}
                   </div>
-                </div>
-                {/* Footer */}
-                <div className="w-full bg-[#14213d] py-2 flex flex-col items-center">
-                  <span
-                    className="text-white font-bold text-lg tracking-wide flex items-center gap-1"
-                    style={{ fontFamily: "Helvetica" }}
-                  >
-                    Kanriapps <span className="text-orange-400">❤️</span>{" "}
-                    <span className="text-[#fca311] font-extrabold">POS</span>
-                  </span>
-                  <span className="text-xs text-gray-300 mt-1">
-                    made with love at Kanriapps.com
-                  </span>
                 </div>
               </div>
             </div>
