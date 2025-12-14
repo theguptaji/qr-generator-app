@@ -9,7 +9,6 @@ import { QRCodeCanvas } from "qrcode.react";
 import jsPDF from "jspdf";
 import QRCodeLib from "qrcode";
 import html2canvas from "html2canvas";
-import { FontSelector } from "@/components/FontSelector";
 import MainLayout from "@/components/MainLayout";
 import {
   Select,
@@ -18,22 +17,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ColorPicker } from "@/components/ui/color-picker";
+import { Type, Palette, Gauge } from "lucide-react";
 
-// Color palettes for QR and background
-const qrColorPalette = [
-  { name: "Blue", value: "#2563eb" },
-  { name: "Green", value: "#16a34a" },
-  { name: "Purple", value: "#7c3aed" },
-  { name: "Red", value: "#dc2626" },
-  { name: "Orange", value: "#ea580c" },
-  { name: "Teal", value: "#0d9488" },
-  { name: "Pink", value: "#db2777" },
-  { name: "Indigo", value: "#4f46e5" },
-  { name: "Cyan", value: "#0891b2" },
-  { name: "Lime", value: "#65a30d" },
-  { name: "Amber", value: "#d97706" },
-  { name: "Rose", value: "#e11d48" },
+// Fonts list
+const fonts = [
+  { label: "Roboto", value: "Roboto" },
+  { label: "Open Sans", value: "Open Sans" },
+  { label: "Lato", value: "Lato" },
+  { label: "Montserrat", value: "Montserrat" },
+  { label: "Playfair Display", value: "Playfair Display" },
+  { label: "Merriweather", value: "Merriweather" },
+  { label: "Source Code Pro", value: "Source Code Pro" },
+  { label: "Dancing Script", value: "Dancing Script" },
+  { label: "Pacifico", value: "Pacifico" },
 ];
+
+// Font sizes
+const fontSizes = [8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64];
 
 const bgColorPalette = [
   { name: "White", value: "#ffffff" },
@@ -65,6 +66,12 @@ interface TextPosition {
   y: number;
 }
 
+interface TextStyle {
+  font: string;
+  size: number;
+  color: string;
+}
+
 export default function QRGeneratorPage() {
   const [title, setTitle] = useState("Sample Title");
   const [subtitle, setSubtitle] = useState("Subtitle Text");
@@ -73,8 +80,20 @@ export default function QRGeneratorPage() {
   const [additionalText, setAdditionalText] = useState("");
   const [qrColor, setQrColor] = useState("#2563eb");
   const [bgColor, setBgColor] = useState("#ffffff");
-  const [font, setFont] = useState("Montserrat");
   const [selectedTemplate, setSelectedTemplate] = useState<string>("none");
+
+  // Individual text styles
+  const [textStyles, setTextStyles] = useState<{
+    title: TextStyle;
+    subtitle: TextStyle;
+    additionalText: TextStyle;
+    bottomText: TextStyle;
+  }>({
+    title: { font: "Montserrat", size: 32, color: "#2563eb" },
+    subtitle: { font: "Montserrat", size: 16, color: "#6b7280" },
+    additionalText: { font: "Montserrat", size: 18, color: "#2563eb" },
+    bottomText: { font: "Montserrat", size: 14, color: "#6b7280" },
+  });
   const [textPositions, setTextPositions] = useState<{
     title: TextPosition;
     subtitle: TextPosition;
@@ -105,6 +124,21 @@ export default function QRGeneratorPage() {
   const qrRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const [isBatchLoading, setIsBatchLoading] = useState(false);
+
+  // Helper to update text style
+  const updateTextStyle = (
+    field: keyof typeof textStyles,
+    property: keyof TextStyle,
+    value: string | number
+  ) => {
+    setTextStyles((prev) => ({
+      ...prev,
+      [field]: {
+        ...prev[field],
+        [property]: value,
+      },
+    }));
+  };
 
   // Load template image and detect white square for QR code placement
   useEffect(() => {
@@ -443,30 +477,38 @@ export default function QRGeneratorPage() {
       // Draw text elements at their positions
       const titleX = (textPositions.title.x / 100) * canvasWidth;
       const titleY = (textPositions.title.y / 100) * canvasHeight;
-      ctx!.font = `bold ${32 * scale}px ${font}`;
-      ctx!.fillStyle = qrColor;
+      ctx!.font = `bold ${textStyles.title.size * scale}px ${
+        textStyles.title.font
+      }`;
+      ctx!.fillStyle = textStyles.title.color;
       ctx!.textAlign = "center";
       ctx!.textBaseline = "middle";
       ctx!.fillText(title, titleX, titleY);
 
       const subtitleX = (textPositions.subtitle.x / 100) * canvasWidth;
       const subtitleY = (textPositions.subtitle.y / 100) * canvasHeight;
-      ctx!.font = `${16 * scale}px ${font}`;
-      ctx!.fillStyle = "#6b7280";
+      ctx!.font = `${textStyles.subtitle.size * scale}px ${
+        textStyles.subtitle.font
+      }`;
+      ctx!.fillStyle = textStyles.subtitle.color;
       ctx!.fillText(subtitle, subtitleX, subtitleY);
 
       if (additionalText) {
         const addTextX = (textPositions.additionalText.x / 100) * canvasWidth;
         const addTextY = (textPositions.additionalText.y / 100) * canvasHeight;
-        ctx!.font = `bold ${18 * scale}px ${font}`;
-        ctx!.fillStyle = qrColor;
+        ctx!.font = `bold ${textStyles.additionalText.size * scale}px ${
+          textStyles.additionalText.font
+        }`;
+        ctx!.fillStyle = textStyles.additionalText.color;
         ctx!.fillText(additionalText, addTextX, addTextY);
       }
 
       const bottomTextX = (textPositions.bottomText.x / 100) * canvasWidth;
       const bottomTextY = (textPositions.bottomText.y / 100) * canvasHeight;
-      ctx!.font = `${14 * scale}px ${font}`;
-      ctx!.fillStyle = "#6b7280";
+      ctx!.font = `${textStyles.bottomText.size * scale}px ${
+        textStyles.bottomText.font
+      }`;
+      ctx!.fillStyle = textStyles.bottomText.color;
       ctx!.fillText(bottomText, bottomTextX, bottomTextY);
 
       // Convert to PDF
@@ -588,32 +630,44 @@ export default function QRGeneratorPage() {
         ctx!.restore();
         ctx!.drawImage(qrImage, qrX, qrY, qrCanvas.width, qrCanvas.height);
         // --- Text ---
-        ctx!.font = `bold ${Math.floor(standeeWidth * 0.11)}px ${font}`;
-        ctx!.fillStyle = qrColor;
+        const titleSize = Math.floor(
+          (textStyles.title.size / 380) * standeeWidth
+        );
+        ctx!.font = `bold ${titleSize}px ${textStyles.title.font}`;
+        ctx!.fillStyle = textStyles.title.color;
         ctx!.textAlign = "center";
         ctx!.fillText(
           title,
           xOffset + standeeWidth / 2,
           yOffset + Math.floor(standeeHeight * 0.15)
         );
-        ctx!.font = `${Math.floor(standeeWidth * 0.055)}px ${font}`;
-        ctx!.fillStyle = "#6b7280";
+        const subtitleSize = Math.floor(
+          (textStyles.subtitle.size / 380) * standeeWidth
+        );
+        ctx!.font = `${subtitleSize}px ${textStyles.subtitle.font}`;
+        ctx!.fillStyle = textStyles.subtitle.color;
         ctx!.fillText(
           subtitle,
           xOffset + standeeWidth / 2,
           yOffset + Math.floor(standeeHeight * 0.22)
         );
         // --- Additional Text (auto-incremented) ---
-        ctx!.font = `bold ${Math.floor(standeeWidth * 0.065)}px ${font}`;
-        ctx!.fillStyle = qrColor;
+        const addTextSize = Math.floor(
+          (textStyles.additionalText.size / 380) * standeeWidth
+        );
+        ctx!.font = `bold ${addTextSize}px ${textStyles.additionalText.font}`;
+        ctx!.fillStyle = textStyles.additionalText.color;
         ctx!.fillText(
           `${prefix} ${standeeNum}`,
           xOffset + standeeWidth / 2,
           yOffset + Math.floor(standeeHeight * 0.8)
         );
         // --- Bottom Text ---
-        ctx!.font = `${Math.floor(standeeWidth * 0.05)}px ${font}`;
-        ctx!.fillStyle = "#6b7280";
+        const bottomTextSize = Math.floor(
+          (textStyles.bottomText.size / 380) * standeeWidth
+        );
+        ctx!.font = `${bottomTextSize}px ${textStyles.bottomText.font}`;
+        ctx!.fillStyle = textStyles.bottomText.color;
         ctx!.fillText(
           bottomText,
           xOffset + standeeWidth / 2,
@@ -716,87 +770,263 @@ export default function QRGeneratorPage() {
                   </Select>
                 </div>
                 <div>
+                  <Label htmlFor="qrLink" className="mb-2">
+                    QR Code Link
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="qrLink"
+                      type="url"
+                      value={qrLink}
+                      onChange={(e) => setQrLink(e.target.value)}
+                      placeholder="Enter URL for QR code"
+                      className="flex-1"
+                    />
+                    <ColorPicker value={qrColor} onChange={setQrColor} />
+                  </div>
+                </div>
+
+                {/* Title with controls */}
+                <div>
                   <Label htmlFor="title" className="mb-2">
                     Title
                   </Label>
-                  <Input
-                    id="title"
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter title"
-                    maxLength={32}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="title"
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Enter title"
+                      maxLength={32}
+                      className="flex-1"
+                    />
+                    <Select
+                      value={textStyles.title.font}
+                      onValueChange={(value) =>
+                        updateTextStyle("title", "font", value)
+                      }
+                    >
+                      <SelectTrigger className="w-10 h-10 p-0">
+                        <Type className="h-4 w-4" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fonts.map((font) => (
+                          <SelectItem key={font.value} value={font.value}>
+                            <span style={{ fontFamily: font.value }}>
+                              {font.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={textStyles.title.size.toString()}
+                      onValueChange={(value) =>
+                        updateTextStyle("title", "size", parseInt(value))
+                      }
+                    >
+                      <SelectTrigger className="w-10 h-10 p-0">
+                        <Gauge className="h-4 w-4" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fontSizes.map((size) => (
+                          <SelectItem key={size} value={size.toString()}>
+                            {size}px
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <ColorPicker
+                      value={textStyles.title.color}
+                      onChange={(value) =>
+                        updateTextStyle("title", "color", value)
+                      }
+                    />
+                  </div>
                 </div>
+
+                {/* Subtitle with controls */}
                 <div>
                   <Label htmlFor="subtitle" className="mb-2">
                     Subtitle
                   </Label>
-                  <Input
-                    id="subtitle"
-                    type="text"
-                    value={subtitle}
-                    onChange={(e) => setSubtitle(e.target.value)}
-                    placeholder="Enter subtitle"
-                    maxLength={32}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="subtitle"
+                      type="text"
+                      value={subtitle}
+                      onChange={(e) => setSubtitle(e.target.value)}
+                      placeholder="Enter subtitle"
+                      maxLength={32}
+                      className="flex-1"
+                    />
+                    <Select
+                      value={textStyles.subtitle.font}
+                      onValueChange={(value) =>
+                        updateTextStyle("subtitle", "font", value)
+                      }
+                    >
+                      <SelectTrigger className="w-10 h-10 p-0">
+                        <Type className="h-4 w-4" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fonts.map((font) => (
+                          <SelectItem key={font.value} value={font.value}>
+                            <span style={{ fontFamily: font.value }}>
+                              {font.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={textStyles.subtitle.size.toString()}
+                      onValueChange={(value) =>
+                        updateTextStyle("subtitle", "size", parseInt(value))
+                      }
+                    >
+                      <SelectTrigger className="w-10 h-10 p-0">
+                        <Gauge className="h-4 w-4" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fontSizes.map((size) => (
+                          <SelectItem key={size} value={size.toString()}>
+                            {size}px
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <ColorPicker
+                      value={textStyles.subtitle.color}
+                      onChange={(value) =>
+                        updateTextStyle("subtitle", "color", value)
+                      }
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="qrLink" className="mb-2">
-                    QR Code Link
-                  </Label>
-                  <Input
-                    id="qrLink"
-                    type="url"
-                    value={qrLink}
-                    onChange={(e) => setQrLink(e.target.value)}
-                    placeholder="Enter URL for QR code"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="bottomText" className="mb-2">
-                    Bottom Text
-                  </Label>
-                  <Input
-                    id="bottomText"
-                    type="text"
-                    value={bottomText}
-                    onChange={(e) => setBottomText(e.target.value)}
-                    placeholder="Enter bottom text"
-                    maxLength={32}
-                  />
-                </div>
+
+                {/* Additional Text with controls */}
                 <div>
                   <Label htmlFor="additionalText" className="mb-2">
                     Additional Text (Optional)
                   </Label>
-                  <Input
-                    id="additionalText"
-                    type="text"
-                    value={additionalText}
-                    onChange={(e) => setAdditionalText(e.target.value)}
-                    placeholder="e.g., Table no #1"
-                    maxLength={32}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="additionalText"
+                      type="text"
+                      value={additionalText}
+                      onChange={(e) => setAdditionalText(e.target.value)}
+                      placeholder="e.g., Table no #1"
+                      maxLength={32}
+                      className="flex-1"
+                    />
+                    <Select
+                      value={textStyles.additionalText.font}
+                      onValueChange={(value) =>
+                        updateTextStyle("additionalText", "font", value)
+                      }
+                    >
+                      <SelectTrigger className="w-10 h-10 p-0">
+                        <Type className="h-4 w-4" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fonts.map((font) => (
+                          <SelectItem key={font.value} value={font.value}>
+                            <span style={{ fontFamily: font.value }}>
+                              {font.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={textStyles.additionalText.size.toString()}
+                      onValueChange={(value) =>
+                        updateTextStyle(
+                          "additionalText",
+                          "size",
+                          parseInt(value)
+                        )
+                      }
+                    >
+                      <SelectTrigger className="w-10 h-10 p-0">
+                        <Gauge className="h-4 w-4" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fontSizes.map((size) => (
+                          <SelectItem key={size} value={size.toString()}>
+                            {size}px
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <ColorPicker
+                      value={textStyles.additionalText.color}
+                      onChange={(value) =>
+                        updateTextStyle("additionalText", "color", value)
+                      }
+                    />
+                  </div>
                 </div>
 
-                {/* QR Color Palette */}
-                <div className="space-y-1.5">
-                  <Label className="mb-1.5">QR Color</Label>
-                  <div className="grid grid-cols-6 gap-1">
-                    {qrColorPalette.map((color) => (
-                      <button
-                        key={color.value}
-                        onClick={() => setQrColor(color.value)}
-                        className={`w-7 h-7 rounded-md border-2 transition-all ${
-                          qrColor === color.value
-                            ? "border-blue-500 scale-105"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                        style={{ backgroundColor: color.value }}
-                        title={color.name}
-                      />
-                    ))}
+                {/* Bottom Text with controls */}
+                <div>
+                  <Label htmlFor="bottomText" className="mb-2">
+                    Bottom Text
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="bottomText"
+                      type="text"
+                      value={bottomText}
+                      onChange={(e) => setBottomText(e.target.value)}
+                      placeholder="Enter bottom text"
+                      maxLength={32}
+                      className="flex-1"
+                    />
+                    <Select
+                      value={textStyles.bottomText.font}
+                      onValueChange={(value) =>
+                        updateTextStyle("bottomText", "font", value)
+                      }
+                    >
+                      <SelectTrigger className="w-10 h-10 p-0">
+                        <Type className="h-4 w-4" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fonts.map((font) => (
+                          <SelectItem key={font.value} value={font.value}>
+                            <span style={{ fontFamily: font.value }}>
+                              {font.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={textStyles.bottomText.size.toString()}
+                      onValueChange={(value) =>
+                        updateTextStyle("bottomText", "size", parseInt(value))
+                      }
+                    >
+                      <SelectTrigger className="w-10 h-10 p-0">
+                        <Gauge className="h-4 w-4" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fontSizes.map((size) => (
+                          <SelectItem key={size} value={size.toString()}>
+                            {size}px
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <ColorPicker
+                      value={textStyles.bottomText.color}
+                      onChange={(value) =>
+                        updateTextStyle("bottomText", "color", value)
+                      }
+                    />
                   </div>
                 </div>
 
@@ -828,7 +1058,6 @@ export default function QRGeneratorPage() {
                   </div>
                 )}
 
-                <FontSelector selectedFont={font} onFontChange={setFont} />
                 <Button className="mt-4 w-full" onClick={handleTableAppQRs}>
                   Download PDF
                 </Button>
@@ -939,9 +1168,9 @@ export default function QRGeneratorPage() {
                     left: `${textPositions.title.x}%`,
                     top: `${textPositions.title.y}%`,
                     transform: "translate(-50%, -50%)",
-                    fontFamily: font,
-                    color: qrColor,
-                    fontSize: "clamp(1.5rem, 4vw, 2rem)",
+                    fontFamily: textStyles.title.font,
+                    color: textStyles.title.color,
+                    fontSize: `${textStyles.title.size}px`,
                     fontWeight: "bold",
                     pointerEvents: dragging === "title" ? "none" : "auto",
                     textShadow: "0 1px 2px rgba(0,0,0,0.1)",
@@ -961,9 +1190,9 @@ export default function QRGeneratorPage() {
                     left: `${textPositions.subtitle.x}%`,
                     top: `${textPositions.subtitle.y}%`,
                     transform: "translate(-50%, -50%)",
-                    fontFamily: font,
-                    color: "#6b7280",
-                    fontSize: "clamp(0.875rem, 2vw, 1rem)",
+                    fontFamily: textStyles.subtitle.font,
+                    color: textStyles.subtitle.color,
+                    fontSize: `${textStyles.subtitle.size}px`,
                     fontWeight: "semibold",
                     pointerEvents: dragging === "subtitle" ? "none" : "auto",
                     textShadow: "0 1px 2px rgba(0,0,0,0.1)",
@@ -984,9 +1213,9 @@ export default function QRGeneratorPage() {
                       left: `${textPositions.additionalText.x}%`,
                       top: `${textPositions.additionalText.y}%`,
                       transform: "translate(-50%, -50%)",
-                      fontFamily: font,
-                      color: qrColor,
-                      fontSize: "clamp(1rem, 2.5vw, 1.25rem)",
+                      fontFamily: textStyles.additionalText.font,
+                      color: textStyles.additionalText.color,
+                      fontSize: `${textStyles.additionalText.size}px`,
                       fontWeight: "bold",
                       pointerEvents:
                         dragging === "additionalText" ? "none" : "auto",
@@ -1008,9 +1237,9 @@ export default function QRGeneratorPage() {
                     left: `${textPositions.bottomText.x}%`,
                     top: `${textPositions.bottomText.y}%`,
                     transform: "translate(-50%, -50%)",
-                    fontFamily: font,
-                    color: "#6b7280",
-                    fontSize: "clamp(0.75rem, 2vw, 0.875rem)",
+                    fontFamily: textStyles.bottomText.font,
+                    color: textStyles.bottomText.color,
+                    fontSize: `${textStyles.bottomText.size}px`,
                     pointerEvents: dragging === "bottomText" ? "none" : "auto",
                     textShadow: "0 1px 2px rgba(0,0,0,0.1)",
                   }}
@@ -1076,9 +1305,9 @@ export default function QRGeneratorPage() {
                       left: `${textPositions.title.x}%`,
                       top: `${textPositions.title.y}%`,
                       transform: "translate(-50%, -50%)",
-                      fontFamily: font,
-                      color: qrColor,
-                      fontSize: "2rem",
+                      fontFamily: textStyles.title.font,
+                      color: textStyles.title.color,
+                      fontSize: `${textStyles.title.size}px`,
                       fontWeight: "bold",
                     }}
                   >
@@ -1090,9 +1319,9 @@ export default function QRGeneratorPage() {
                       left: `${textPositions.subtitle.x}%`,
                       top: `${textPositions.subtitle.y}%`,
                       transform: "translate(-50%, -50%)",
-                      fontFamily: font,
-                      color: "#6b7280",
-                      fontSize: "1rem",
+                      fontFamily: textStyles.subtitle.font,
+                      color: textStyles.subtitle.color,
+                      fontSize: `${textStyles.subtitle.size}px`,
                       fontWeight: "semibold",
                     }}
                   >
@@ -1105,9 +1334,9 @@ export default function QRGeneratorPage() {
                         left: `${textPositions.additionalText.x}%`,
                         top: `${textPositions.additionalText.y}%`,
                         transform: "translate(-50%, -50%)",
-                        fontFamily: font,
-                        color: qrColor,
-                        fontSize: "1.25rem",
+                        fontFamily: textStyles.additionalText.font,
+                        color: textStyles.additionalText.color,
+                        fontSize: `${textStyles.additionalText.size}px`,
                         fontWeight: "bold",
                       }}
                     >
@@ -1120,9 +1349,9 @@ export default function QRGeneratorPage() {
                       left: `${textPositions.bottomText.x}%`,
                       top: `${textPositions.bottomText.y}%`,
                       transform: "translate(-50%, -50%)",
-                      fontFamily: font,
-                      color: "#6b7280",
-                      fontSize: "0.875rem",
+                      fontFamily: textStyles.bottomText.font,
+                      color: textStyles.bottomText.color,
+                      fontSize: `${textStyles.bottomText.size}px`,
                     }}
                   >
                     {bottomText}
