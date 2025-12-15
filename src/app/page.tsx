@@ -52,13 +52,43 @@ const bgColorPalette = [
 ];
 
 const templates = [
-  { id: "none", name: "None", path: null },
-  { id: "tp-1", name: "Template 1", path: "/tp-1.png" },
-  { id: "tp-2", name: "Template 2", path: "/tp-2.png" },
-  { id: "tp-3", name: "Template 3", path: "/tp-3.png" },
-  { id: "tp-4", name: "Template 4", path: "/tp-4.png" },
-  { id: "tp-5", name: "Template 5", path: "/tp-5.png" },
-  { id: "tp-6", name: "Template 6", path: "/tp-6.png" },
+  { id: "none", name: "None", path: null, thumbnail: null },
+  {
+    id: "tp-1",
+    name: "Template 1",
+    path: "/tp-1.png",
+    thumbnail: "/thumb-tp-1.jpg",
+  },
+  {
+    id: "tp-2",
+    name: "Template 2",
+    path: "/tp-2.png",
+    thumbnail: "/thumb-tp-2.jpg",
+  },
+  {
+    id: "tp-3",
+    name: "Template 3",
+    path: "/tp-3.png",
+    thumbnail: "/thumb-tp-3.jpg",
+  },
+  {
+    id: "tp-4",
+    name: "Template 4",
+    path: "/tp-4.png",
+    thumbnail: "/thumb-tp-4.jpg",
+  },
+  {
+    id: "tp-5",
+    name: "Template 5",
+    path: "/tp-5.png",
+    thumbnail: "/thumb-tp-5.jpg",
+  },
+  {
+    id: "tp-6",
+    name: "Template 6",
+    path: "/tp-6.png",
+    thumbnail: "/thumb-tp-6.jpg",
+  },
 ];
 
 interface TextPosition {
@@ -73,14 +103,14 @@ interface TextStyle {
 }
 
 export default function QRGeneratorPage() {
-  const [title, setTitle] = useState("Sample Title");
-  const [subtitle, setSubtitle] = useState("Subtitle Text");
+  const [title, setTitle] = useState("Restaurant Name");
+  const [subtitle, setSubtitle] = useState("Digital Menu");
   const [qrLink, setQrLink] = useState("https://example.com");
   const [bottomText, setBottomText] = useState("Scan to learn more");
   const [additionalText, setAdditionalText] = useState("");
-  const [qrColor, setQrColor] = useState("#2563eb");
+  const [qrColor, setQrColor] = useState("#000000");
   const [bgColor, setBgColor] = useState("#ffffff");
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("none");
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("tp-1");
 
   // Individual text styles
   const [textStyles, setTextStyles] = useState<{
@@ -89,10 +119,10 @@ export default function QRGeneratorPage() {
     additionalText: TextStyle;
     bottomText: TextStyle;
   }>({
-    title: { font: "Montserrat", size: 32, color: "#2563eb" },
-    subtitle: { font: "Montserrat", size: 16, color: "#6b7280" },
-    additionalText: { font: "Montserrat", size: 18, color: "#2563eb" },
-    bottomText: { font: "Montserrat", size: 14, color: "#6b7280" },
+    title: { font: "Montserrat", size: 20, color: "#ffffff" },
+    subtitle: { font: "Montserrat", size: 40, color: "#ffffff" },
+    additionalText: { font: "Montserrat", size: 18, color: "#ffffff" },
+    bottomText: { font: "Montserrat", size: 14, color: "#ffffff" },
   });
   const [textPositions, setTextPositions] = useState<{
     title: TextPosition;
@@ -100,10 +130,10 @@ export default function QRGeneratorPage() {
     additionalText: TextPosition;
     bottomText: TextPosition;
   }>({
-    title: { x: 50, y: 15 },
+    title: { x: 60, y: 3 },
     subtitle: { x: 50, y: 25 },
     additionalText: { x: 50, y: 75 },
-    bottomText: { x: 50, y: 85 },
+    bottomText: { x: 50, y: 37 },
   });
   const [dragging, setDragging] = useState<string | null>(null);
   const [qrDragging, setQrDragging] = useState(false);
@@ -120,7 +150,7 @@ export default function QRGeneratorPage() {
     x: number;
     y: number;
     size: number;
-  } | null>({ x: 50, y: 50, size: 30 });
+  } | null>({ x: 50, y: 59, size: 60 });
   const qrRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const [isBatchLoading, setIsBatchLoading] = useState(false);
@@ -228,8 +258,8 @@ export default function QRGeneratorPage() {
           setManualQrPosition(detectedPosition);
         }
       } else {
-        // Default position if no white square found (center, 30% size)
-        const defaultPosition = { x: 50, y: 50, size: 30 };
+        // Default position if no white square found (center, 60% size)
+        const defaultPosition = { x: 50, y: 50, size: 60 };
         setQrPosition(defaultPosition);
         if (!manualQrPosition) {
           setManualQrPosition(defaultPosition);
@@ -242,7 +272,7 @@ export default function QRGeneratorPage() {
   // Initialize manual position when template changes
   useEffect(() => {
     if (selectedTemplate === "none") {
-      setManualQrPosition({ x: 50, y: 50, size: 30 });
+      setManualQrPosition({ x: 50, y: 50, size: 60 });
     } else if (qrPosition && !manualQrPosition) {
       // Initialize with detected position when template is first selected
       setManualQrPosition(qrPosition);
@@ -426,11 +456,16 @@ export default function QRGeneratorPage() {
 
       // Generate and draw QR code - use manual position if available
       const finalQrPosition = manualQrPosition ||
-        qrPosition || { x: 50, y: 50, size: 30 };
+        qrPosition || { x: 50, y: 50, size: 60 };
+      // Limit QR size to match preview (max 50% or 200px equivalent)
+      const maxQrSizePercent = Math.min(finalQrPosition.size, 50);
       const qrSize =
-        (finalQrPosition.size / 100) * Math.min(canvasWidth, canvasHeight);
+        (maxQrSizePercent / 100) * Math.min(canvasWidth, canvasHeight);
+      // Also limit to 200px equivalent in canvas coordinates
+      const maxQrSizePx = 200;
+      const actualQrSize = Math.min(qrSize, maxQrSizePx);
       const qrDataUrl = await QRCodeLib.toDataURL(qrLink, {
-        width: qrSize * scale,
+        width: actualQrSize * scale,
         margin: 1,
         color: {
           dark: qrColor,
@@ -447,20 +482,20 @@ export default function QRGeneratorPage() {
       const qrX = (finalQrPosition.x / 100) * canvasWidth;
       const qrY = (finalQrPosition.y / 100) * canvasHeight;
 
-      // Draw white background for QR code
-      const qrPadding = qrSize * 0.1;
+      // Draw white background for QR code - reduced padding to match preview (p-2 = 8px, which is ~4% of typical QR size)
+      const qrPadding = actualQrSize * 0.04;
       ctx!.shadowColor = "rgba(0, 0, 0, 0.15)";
-      ctx!.shadowBlur = 6;
+      ctx!.shadowBlur = 3;
       ctx!.shadowOffsetX = 0;
-      ctx!.shadowOffsetY = 2;
+      ctx!.shadowOffsetY = 1;
       ctx!.fillStyle = "#ffffff";
       ctx!.beginPath();
       ctx!.roundRect(
-        qrX - qrSize / 2 - qrPadding,
-        qrY - qrSize / 2 - qrPadding,
-        qrSize + qrPadding * 2,
-        qrSize + qrPadding * 2,
-        16
+        qrX - actualQrSize / 2 - qrPadding,
+        qrY - actualQrSize / 2 - qrPadding,
+        actualQrSize + qrPadding * 2,
+        actualQrSize + qrPadding * 2,
+        8
       );
       ctx!.fill();
 
@@ -468,10 +503,10 @@ export default function QRGeneratorPage() {
       ctx!.shadowBlur = 0;
       ctx!.drawImage(
         qrImage,
-        qrX - qrSize / 2,
-        qrY - qrSize / 2,
-        qrSize,
-        qrSize
+        qrX - actualQrSize / 2,
+        qrY - actualQrSize / 2,
+        actualQrSize,
+        actualQrSize
       );
 
       // Draw text elements at their positions
@@ -480,15 +515,55 @@ export default function QRGeneratorPage() {
       const titleY = (textPositions.title.y / 100) * canvasHeight;
       ctx!.font = `bold ${textStyles.title.size}px ${textStyles.title.font}`;
       ctx!.fillStyle = textStyles.title.color;
-      ctx!.textAlign = "center";
-      ctx!.textBaseline = "middle";
-      ctx!.fillText(title, titleX, titleY);
+      ctx!.textAlign = "left";
+      ctx!.textBaseline = "top";
 
+      // Wrap title text to prevent truncation
+      const maxTitleWidth = canvasWidth - titleX - 20; // Leave 20px margin from right
+      const titleWords = title.split(" ");
+      const titleLines: string[] = [];
+      let currentLine = "";
+
+      titleWords.forEach((word) => {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const metrics = ctx!.measureText(testLine);
+        if (metrics.width > maxTitleWidth && currentLine) {
+          titleLines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      });
+      if (currentLine) {
+        titleLines.push(currentLine);
+      }
+
+      const titleLineHeight = textStyles.title.size * 1.2;
+      titleLines.forEach((line, index) => {
+        ctx!.fillText(line, titleX, titleY + index * titleLineHeight);
+      });
+
+      // Draw subtitle with word wrapping
       const subtitleX = (textPositions.subtitle.x / 100) * canvasWidth;
       const subtitleY = (textPositions.subtitle.y / 100) * canvasHeight;
-      ctx!.font = `${textStyles.subtitle.size}px ${textStyles.subtitle.font}`;
+      ctx!.font = `bold ${textStyles.subtitle.size}px ${textStyles.subtitle.font}`;
       ctx!.fillStyle = textStyles.subtitle.color;
-      ctx!.fillText(subtitle, subtitleX, subtitleY);
+      ctx!.textAlign = "center";
+      ctx!.textBaseline = "middle";
+
+      // Split subtitle into words and draw each word on a new line
+      const subtitleWords = subtitle.split(" ");
+      const subtitleLineHeight = textStyles.subtitle.size * 1.2; // Reduced line height
+      const subtitleStartY =
+        subtitleY - ((subtitleWords.length - 1) * subtitleLineHeight) / 2;
+
+      subtitleWords.forEach((word, index) => {
+        ctx!.fillText(
+          word,
+          subtitleX,
+          subtitleStartY + index * subtitleLineHeight
+        );
+      });
 
       if (additionalText) {
         const addTextX = (textPositions.additionalText.x / 100) * canvasWidth;
@@ -743,24 +818,52 @@ export default function QRGeneratorPage() {
             <CardContent className="px-4 lg:px-6 h-full overflow-y-auto">
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="template" className="mb-2">
-                    Template
-                  </Label>
-                  <Select
-                    value={selectedTemplate}
-                    onValueChange={setSelectedTemplate}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select template" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templates.map((template) => (
-                        <SelectItem key={template.id} value={template.id}>
-                          {template.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="mb-2">Template</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {templates.map((template) => (
+                      <button
+                        key={template.id}
+                        type="button"
+                        onClick={() => setSelectedTemplate(template.id)}
+                        className={`relative aspect-[380/540] rounded-lg border-2 overflow-hidden transition-all ${
+                          selectedTemplate === template.id
+                            ? "border-blue-500 ring-2 ring-blue-500 ring-offset-2"
+                            : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                        }`}
+                      >
+                        {template.thumbnail ? (
+                          <img
+                            src={template.thumbnail}
+                            alt={template.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400">
+                            None
+                          </div>
+                        )}
+                        {selectedTemplate === template.id && (
+                          <div className="absolute inset-0 bg-blue-500 bg-opacity-20 flex items-center justify-center">
+                            <div className="bg-blue-500 text-white rounded-full p-1">
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                            </div>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="qrLink" className="mb-2">
@@ -1023,27 +1126,6 @@ export default function QRGeneratorPage() {
                   </div>
                 </div>
 
-                {/* Background Color Palette - only show if no template */}
-                {selectedTemplate === "none" && (
-                  <div className="space-y-1.5">
-                    <Label className="mb-1.5">Background Color</Label>
-                    <div className="grid grid-cols-6 gap-1">
-                      {bgColorPalette.map((color) => (
-                        <button
-                          key={color.value}
-                          onClick={() => setBgColor(color.value)}
-                          className={`w-7 h-7 rounded-md border-2 transition-all ${
-                            bgColor === color.value
-                              ? "border-blue-500 scale-105"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                          style={{ backgroundColor: color.value }}
-                          title={color.name}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
                 {selectedTemplate !== "none" && (
                   <div className="text-sm text-gray-500 dark:text-gray-400 p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
                     💡 Drag text elements and QR code in the preview to
@@ -1160,7 +1242,7 @@ export default function QRGeneratorPage() {
                   style={{
                     left: `${textPositions.title.x}%`,
                     top: `${textPositions.title.y}%`,
-                    transform: "translate(-50%, -50%)",
+                    transform: "translate(0, 0)",
                     fontFamily: textStyles.title.font,
                     color: textStyles.title.color,
                     fontSize: `${textStyles.title.size}px`,
@@ -1186,13 +1268,23 @@ export default function QRGeneratorPage() {
                     fontFamily: textStyles.subtitle.font,
                     color: textStyles.subtitle.color,
                     fontSize: `${textStyles.subtitle.size}px`,
-                    fontWeight: "semibold",
+                    fontWeight: "bold",
                     pointerEvents: dragging === "subtitle" ? "none" : "auto",
                     textShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                    textAlign: "center",
+                    width: "max-content",
+                    maxWidth: "80%",
+                    whiteSpace: "normal",
+                    wordBreak: "break-word",
+                    lineHeight: "1.2",
                   }}
                   onMouseDown={(e) => handleMouseDown("subtitle", e)}
                 >
-                  {subtitle}
+                  {subtitle.split(" ").map((word, i) => (
+                    <div key={i} style={{ display: "block" }}>
+                      {word}
+                    </div>
+                  ))}
                 </div>
 
                 {additionalText && (
@@ -1297,7 +1389,7 @@ export default function QRGeneratorPage() {
                     style={{
                       left: `${textPositions.title.x}%`,
                       top: `${textPositions.title.y}%`,
-                      transform: "translate(-50%, -50%)",
+                      transform: "translate(0, 0)",
                       fontFamily: textStyles.title.font,
                       color: textStyles.title.color,
                       fontSize: `${textStyles.title.size}px`,
@@ -1315,10 +1407,21 @@ export default function QRGeneratorPage() {
                       fontFamily: textStyles.subtitle.font,
                       color: textStyles.subtitle.color,
                       fontSize: `${textStyles.subtitle.size}px`,
-                      fontWeight: "semibold",
+                      fontWeight: "bold",
+                      textAlign: "center",
+                      width: "max-content",
+                      maxWidth: "80%",
+                      whiteSpace: "normal",
+                      wordBreak: "break-word",
+                      lineHeight: "1.2",
                     }}
                   >
-                    {subtitle}
+                    {subtitle.split(" ").map((word, i, arr) => (
+                      <span key={i}>
+                        {word}
+                        {i < arr.length - 1 && " "}
+                      </span>
+                    ))}
                   </div>
                   {additionalText && (
                     <div
